@@ -1,0 +1,8 @@
+<deploy>
+    <files>
+        <path>~/FileCabinet/SuiteScripts/ThruCloud/GenericBarcodeScannerApp/*</path>
+    </files>
+    <objects>
+        <path>~/Objects/GenericBarcodeScannerApp/*</path>
+    </objects>
+</deploy>
