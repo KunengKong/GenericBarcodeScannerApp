@@ -1,119 +1,152 @@
 import React, { useEffect, useState } from 'react'
+
 import { Box, TextField, Button, Typography, TableBody, TableRow, TableCell, Stack, Table } from "@mui/material"
 import Scanner from '../Scanner/Scan'
 import $ from "jquery"
 
 
 export default () => {
-  // const objSampleData = [{
-  //   "id": 31118,
-  //   "name": "Item Receipt #IR422",
-  //   "items": [
-  //     {
-  //       "id": 31118,
-  //       "transaction_name": "Item Receipt #IR422",
-  //       "barcode": "3803886779575",
-  //       "itemid": 323,
-  //       "itemname": '60" 4K Ultra HDTV',
-  //       "quantity": 14
-  //     },
-  //     {
-  //       "id": 31118,
-  //       "transaction_name": "Item Receipt #IR422",
-  //       "barcode": "3803886779575",
-  //       "itemid": 325,
-  //       "itemname": "3X HD Video Conferencing Camera",
-  //       "quantity": 19
-  //     }
-  //   ],
-  //   "type": "itemReceipt"
-  // }, {
-  //   "item": {
-  //     "id": 323,
-  //     "itemid": '60" 4K Ultra HDTV',
-  //     "barcode": "3498754542803"
-  //   },
-  //   "quantity": 17,
-  //   "type": "item"
-  // }]
-  const [outboundState, setOutboundState] = useState({
-    page: 'outbound',
-    items: process.env.REACT_APP_DEBUG_MODE === 'true' ? [] : [], //objSampleData
+  const [returnState, setReturnState] = useState({
+    page: 'return',
+    items: [],
     barcode: null,
     location: 100, // TODO: default must be change to be dynamically set from netsuite user lcoation
-    step: 'scan',
-    customer: 280
+    step: 'returnItemFrom',
+    returnFrom: ''
   })
 
   useEffect(() => {
-    if (outboundState.barcode && outboundState.step === 'scan') {
+    if (returnState.barcode && returnState.step === 'scan') {
       processBarcode()
     }
-    console.log('outboundState', outboundState)
-  }, [outboundState.barcode])
+    console.log('returnState', returnState)
+  }, [returnState.barcode])
   const processBarcode = async () => {
     await $.post(process.env.REACT_APP_NETSUITE_URL, {
       data: JSON.stringify({
-        action: 'outboundItemRecieptLookUp',
-        page: outboundState.page,
+        action: 'returnItemRecieptLookUp',
+        page: returnState.page,
         data: {
-          barcode: outboundState.barcode,
-          location: outboundState.location
+          barcode: returnState.barcode,
+          location: returnState.location,
+          returnFrom: returnState.returnFrom
         }
       })
     }).done((res) => {
       const objResult = JSON.parse(res)
-      setOutboundState(prev => ({
+      console.log('objResult | v', objResult)
+      setReturnState(prev => ({
         ...prev,
         barcode: null,
         items: [...prev.items, objResult]
       }))
     })
   }
-  const handleConfirmForm = async () => {
-    setOutboundState(prev => ({
+
+  const handleChange = (id, value, type) => {
+    let qty = Number(value) || 0
+    setReturnState(prev => ({
       ...prev,
-      step: 'processing',
-      items: []
+      items: prev.items.map(row => {
+        if (type === 'line') {
+          return {
+            ...row,
+            items: row.items.map(sub => {
+              if (sub.id !== id) return sub
+              if (qty < 0) qty = 0
+              if (qty > sub.max_quantity) qty = sub.max_quantity
+              return { ...sub, quantity: qty }
+            })
+          }
+        }
+        if (row.id === id) {
+          if (qty < 0) qty = 0
+          return { ...row, quantity: qty }
+        }
+
+        return row
+      })
     }))
+  }
+
+  const handleConfirmForm = async () => {
+    // setReturnState(prev => ({
+    //   ...prev,
+    //   step: 'processing',
+    //   items: []
+    // }))
     await $.post(process.env.REACT_APP_NETSUITE_URL, {
       data: JSON.stringify({
-        action: 'processOutbound',
-        page: outboundState.page,
+        action: 'processReturnAuthorization',
+        page: returnState.page,
         data: {
-          items: outboundState.items,
-          customer: outboundState.customer,
-          location: outboundState.location
+          items: returnState.items,
+          customer: returnState.customer,
+          location: returnState.location
         }
       })
     }).done((res) => {
-      setOutboundState(prev => ({
-        ...prev,
-        step: 'complete',
-        barcode: null
-      }))
-      setTimeout(() => {
-        setOutboundState(prev => ({
-          ...prev,
-          step: 'scan',
-          barcode: null
-        }))
-      }, 2000)
+      // setReturnState(prev => ({
+      //   ...prev,
+      //   step: 'complete',
+      //   barcode: null
+      // }))
+      // setTimeout(() => {
+      //   setReturnState(prev => ({
+      //     ...prev,
+      //     step: 'scan',
+      //     barcode: null
+      //   }))
+      // }, 2000)
     })
   }
-  const handleChange = (id, value) => {
-    setOutboundState(prev => ({
+  const handleReturnFrom = (fromLocation) =>
+    setReturnState(prev => ({
       ...prev,
-      items: prev.items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Number(value) }
-          : item
-      )
+      step: 'scan',
+      returnFrom: fromLocation
     }))
-  }
-  if (outboundState.step === 'scan') {
+
+
+  useEffect(() => {
+    console.log('returnState items', returnState)
+  }, [returnState.barcode])
+
+  if (returnState.step === 'returnItemFrom') {
     return (<>
-      <Scanner state={setOutboundState} />
+      <Box
+        component="form"
+        sx={{
+          width: "100%",
+          maxWidth: 400,
+          mx: "auto",
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <Typography style={{ textAlign: 'center' }}>Return items from which location?</Typography>
+
+        <Button
+          onClick={() => handleReturnFrom('vendor')}
+          variant="outlined"
+          sx={{ width: '100%', height: '60px' }}
+        >
+          Vendor Return
+        </Button>
+        <Button
+          onClick={() => handleReturnFrom('customer')}
+          variant="outlined"
+          sx={{ width: '100%', height: '60px' }}
+        >
+          Customer Return
+        </Button>
+      </Box>
+    </>)
+  } else if (returnState.step === 'scan') {
+    return (<>
+      <Scanner state={setReturnState} />
       <Box>
         <Box
           component="form"
@@ -127,11 +160,11 @@ export default () => {
             gap: 2,
           }}
         >
-          {outboundState.items.length ?
+          {returnState.items.length ?
             <>
               <Table>
                 <TableBody>
-                  {outboundState.items.map(row => row.type == "itemReceipt" ? (<>
+                  {returnState.items.map(row => row.type == "salesOrder" ? (<>
                     <TableRow key={row.id} >
                       <TableCell >
                         <Typography variant="h6" style={{ textAlign: 'top' }}>{row.name}</Typography>
@@ -153,7 +186,13 @@ export default () => {
                             {row.items.map(item => (
                               <TableRow key={item.id}>
                                 <TableCell>{item.itemname}</TableCell>
-                                <TableCell>{item.quantity * row.quantity}</TableCell>
+                                <TableCell>
+                                  <TextField
+                                    value={item.quantity}
+                                    onChange={(e) => handleChange(item.id, e.target.value, 'line')}
+                                    style={{ width: 60 }}
+                                    size="small"
+                                  /></TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -199,24 +238,6 @@ export default () => {
         </Box>
       </Box>
     </>)
-  } else if (outboundState.step == 'processing') {
-    return (<Processing />)
-  } else if (outboundState.step == 'complete') {
-    return (<ProcessComplete />)
   }
 
-}
-const Processing = () => {
-  return (<>
-    <Box>
-      <Typography>Processing . . .</Typography>
-    </Box>
-  </>)
-}
-const ProcessComplete = () => {
-  return (<>
-    <Box>
-      <Typography>Process Complete!</Typography>
-    </Box>
-  </>)
 }

@@ -45,6 +45,7 @@ define(['N/query', 'N/record'],
                 objOutput.name = arrItemReceiptResult[0].transaction_name
                 objOutput.items = arrItemReceiptResult
                 objOutput.type = "itemReceipt"
+                objOutput.quantity = 1
             } else if (!!arrItemResult.length) {
                 objOutput.item = arrItemResult[0]
                 objOutput.type = "item"
@@ -54,34 +55,59 @@ define(['N/query', 'N/record'],
         }
         PUBLIC.processOutbound = (options) => {
             log.debug('processOutbound', options)
-
             try {
-
-                const objCashSaleRec = record.create({ type: record.Type.CASH_SALE, isDynamic: true })
-                objCashSaleRec.setValue('entity', options.customer)
-                objCashSaleRec.setValue('location', options.location)
+                const objSalesOrderRec = record.create({ type: record.Type.SALES_ORDER, isDynamic: true })
+                objSalesOrderRec.setValue('entity', options.customer)
+                objSalesOrderRec.setValue('location', options.location)
                 let lineCount = 0
                 for (const element of options.items) {
                     if (element.type == "item") {
-                        objCashSaleRec.selectLine({ sublistId: 'item', line: lineCount })
-                        objCashSaleRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: element.item.id })
-                        objCashSaleRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: element.quantity })
-                        objCashSaleRec.commitLine({ sublistId: 'item', line: lineCount })
+                        objSalesOrderRec.selectLine({ sublistId: 'item', line: lineCount })
+                        objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: element.item.id })
+                        objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: element.quantity })
+                        objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'custcol_tc_barcode_ean_13', value: element.barcode })
+                        objSalesOrderRec.commitLine({ sublistId: 'item', line: lineCount })
                         lineCount++
                     }
                     if (element.type == "itemReceipt") {
                         for (const line of element.items) {
-                            objCashSaleRec.selectLine({ sublistId: 'item', line: lineCount })
-                            objCashSaleRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: line.itemid })
-                            objCashSaleRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: line.quantity })
-                            objCashSaleRec.commitLine({ sublistId: 'item', line: lineCount })
+                            objSalesOrderRec.selectLine({ sublistId: 'item', line: lineCount })
+                            objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: line.itemid })
+                            objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: line.quantity })
+                            objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'custcol_tc_barcode_ean_13', value: line.barcode })
+                            objSalesOrderRec.commitLine({ sublistId: 'item', line: lineCount })
                             lineCount++
                         }
                     }
                 }
 
-                const intCashSaleId = objCashSaleRec.save()
-                log.debug('intCashSaleId', intCashSaleId)
+                const intSalesOrderId = objSalesOrderRec.save()
+                log.debug('intSalesOrderId', intSalesOrderId)
+
+
+                const objItemFullfilmentRec = record.transform({
+                    fromType: record.Type.SALES_ORDER,
+                    fromId: intSalesOrderId,
+                    toType: record.Type.ITEM_FULFILLMENT,
+                    isDynamic: true,
+                })
+
+                objItemFullfilmentRec.setValue('shipstatus', 'C')
+                objItemFullfilmentRec.setValue('custbody_tc_barcode_ean_13', '------')
+                const intIFLineCount = objItemFullfilmentRec.getLineCount({ sublistId: 'item' })
+                log.debug('intIFLineCount', intIFLineCount)
+                for (let index = 0; index < intIFLineCount; index++) {
+                    const intQuantity = objItemFullfilmentRec.getSublistValue({ sublistId: 'item', fieldId: 'quantityremaining', line: index })
+
+                    log.debug('intQuantity', intQuantity)
+                    objItemFullfilmentRec.selectLine({ sublistId: 'item', line: index })
+                    objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: intQuantity })
+                    // objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: true })
+                    objItemFullfilmentRec.commitLine({ sublistId: 'item', line: index })
+
+                }
+                const intItemReceiptId = objItemFullfilmentRec.save()
+                log.debug('intItemReceiptId', intItemReceiptId)
             } catch (e) {
                 log.error('processOutbound', e)
             }

@@ -2,7 +2,7 @@
     <files>
         <path>~/FileCabinet/SuiteScripts/ThruCloud/GenericBarcodeScannerApp/*</path>
     </files>
-    <objects>
+    <!-- <objects>
         <path>~/Objects/GenericBarcodeScannerApp/*</path>
-    </objects>
+    </objects> -->
 </deploy>

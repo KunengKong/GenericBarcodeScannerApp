@@ -38,7 +38,7 @@ export default (props) => {
         })
       })
       const generalData = JSON.parse(res1)
-
+      console.log('recountState.page', recountState.page)
       const res2 = await $.post(process.env.REACT_APP_NETSUITE_URL, {
         data: JSON.stringify({
           data: {
@@ -115,25 +115,18 @@ export default (props) => {
       })
     }
   }
-  const handleChange = (field) => (e) => {
-    if (field == 'editQuantity') {
+  const handleChange = (field, id) => (e) => {
+    if (field === "editQuantity") {
       const newQty = Number(e.target.value)
-      setRecountState(function (prev) {
-        const updatedItems = []
 
-        for (const item of prev.items) {
-          let tmp = item
-          if (item.id === form.currentItem.id) {
-            tmp = { ...item, quantityonhand: newQty }
-          }
-          updatedItems.push(tmp)
-        }
-
-        return {
-          ...prev,
-          items: updatedItems
-        }
-      })
+      setRecountState(prev => ({
+        ...prev,
+        items: prev.items.map(item =>
+          item.id === id
+            ? { ...item, quantityonhand: newQty }
+            : item
+        )
+      }))
     } else {
       setForm(prev => ({
         ...prev,
@@ -246,6 +239,8 @@ export default (props) => {
           size="small"
           disabled={form.currentItem.description ? true : false}
         />
+
+        <Typography>Quantity On Hand: {form.currentItem.oldquantityonhand || form.currentItem.quantityonhand || 0}</Typography>
 
         <TextField
           label="Quantity"
@@ -383,18 +378,20 @@ export default (props) => {
         {recountState.items?.length > 0 &&
           <Table>
             <TableBody>
+              <TableRow>
+                <TableCell>Item Name</TableCell>
+                <TableCell>Quantity on Hand</TableCell>
+                <TableCell>Counted Quantity</TableCell>
+                <TableCell>UOM</TableCell>
+              </TableRow>
               {recountState.items.map(row => (
                 <TableRow key={row.id}>
                   <TableCell>{row.itemid}</TableCell>
-                  <TableCell>{row.itemid}</TableCell>
+                  <TableCell>{row.oldquantityonhand || row.quantityonhand}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1} alignItems="center">
-
-                      <Typography sx={{ minWidth: 30, textAlign: "center" }}>
-                        { }
-                      </Typography>
                       <TextField
-                        value={parseInt(row.requestedquantity || row.quantityonhand)}
+                        value={parseInt(row.quantityonhand)}
                         onChange={handleChange("editQuantity", row.id)}
                         fullWidth
                         size="small"

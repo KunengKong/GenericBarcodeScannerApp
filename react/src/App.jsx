@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState, useEffect } from "react"
 import { BrowserRouter } from 'react-router-dom'
 import { Router, DrawerList } from './Router/Router'
 import {
@@ -9,17 +9,24 @@ import {
   Container,
   Menu,
   IconButton,
-  Box
+  Box,
+  Typography
 } from '@mui/material'
 import { Menu as MenuIcon } from '@mui/icons-material'
 
 export default function App() {
 
-  const [open, setOpen] = React.useState(false)
+  const [mainApp, setMainApp] = useState({ title: '' })
+
+  useEffect(() => {
+    // Code to run when the URL (location) changes
+    console.log('The URL has changed to:', mainApp.title)
+    // You can perform actions here, like logging a page view for analytics
+  }, [mainApp.title])
+  const [open, setOpen] = useState(false)
   const toggleDrawer = (newOpen) => () => {
     setOpen(newOpen)
   }
-
 
   const AppBarViewCompatibility = [
     { // xs & sm
@@ -47,7 +54,7 @@ export default function App() {
           {AppBarViewCompatibility.map((obj, index) => (
             <>
               <Box sx={{ display: obj.display, }}>
-                <DrawerList position={obj.position} />
+                <DrawerList position={obj.position} setMainAppState={setMainApp} />
               </Box>
             </>
           ))
@@ -58,8 +65,10 @@ export default function App() {
           AppBarViewCompatibility.map((obj, index) => (
             <Box sx={{ flexGrow: 1, display: obj.display }}>
               <AppBar position={obj.position} sx={obj.style}>
+
                 <Container maxWidth="xl">
                   <Toolbar disableGutters>
+                    {mainApp.title}
                     <Box sx={{ flexGrow: 1 }} />
                     <IconButton
                       size="large"
@@ -68,8 +77,10 @@ export default function App() {
                       aria-haspopup="true"
                       onClick={toggleDrawer(true)}
                       color="inherit"
+                      style={{ display: 'flex', alignItems: 'center' }}
                     >
                       <MenuIcon />
+                      <Typography style={{fontSize:10}}>Menu</Typography>
                     </IconButton>
                   </Toolbar>
                 </Container>

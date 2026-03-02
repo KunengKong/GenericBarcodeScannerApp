@@ -58,6 +58,7 @@ define(['N/query', 'N/record'],
             objInventoryAdjustmentRec.setValue('subsidiary', 2)
             objInventoryAdjustmentRec.setValue('account', 10)
             let line = 0
+            let hasChanges = false
             for (const element of options.items) {
                 arrItems.push(element.id)
                 if (element.quantityonhand == element.oldquantityonhand) continue
@@ -77,8 +78,9 @@ define(['N/query', 'N/record'],
 
                 objInventoryAdjustmentRec.commitLine({ sublistId: 'inventory', line: line })
                 line++
+                hasChanges = true
             }
-            const intId = objInventoryAdjustmentRec.save()
+            const intId = hasChanges ? objInventoryAdjustmentRec.save() : -1
             const strQuery = `SELECT
                                 itemvendor.vendor,
                                 item.id as itemid

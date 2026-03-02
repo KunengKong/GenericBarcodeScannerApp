@@ -87,22 +87,31 @@ export default (props) => {
         </Box>
       </Grid>
       {/* TODO: Remove this on production or make ENV file have debug mode */}
-          
-      <Grid size={12}>
+
+      {/* <Grid size={12}>
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-          }}>
-          <Box>
-            <TextField
-              label="Barcode"
-              value={scanForm.barcode || ''}
-              onChange={handleChange("barcode")}
-              size="small"
-            />
-          </Box>
+          }}>*/
+        <>
+        <Box>
+          <TextField
+            label="Barcode"
+            value={scanForm.barcode || ''}
+            onChange={handleChange("barcode")}
+            size="small"
+          />
+        </Box>
+        <Box>
+          <Button
+            onClick={forceReadBarcode}>
+            Force Read Barcode
+          </Button>
+        </Box>
+          </>
+          /*
           <Box>
             <Typography>3498754542803 | 60" Tv</Typography>
             <Typography>0590270309656 | laptop</Typography>
@@ -114,7 +123,7 @@ export default (props) => {
             </Button>
           </Box>
         </Box>
-      </Grid>
+      </Grid> */}
       {/* TODO: Remove this on production or make ENV file have debug mode */}
     </Grid>
   </>
