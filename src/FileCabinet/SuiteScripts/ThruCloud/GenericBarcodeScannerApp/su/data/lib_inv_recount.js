@@ -31,25 +31,6 @@ define(['N/query', 'N/record'],
             return { data: { item: arrResult[0] } }
         }
         PUBLIC.confirmRecount = (options) => {
-            log.debug('confirmRecount', options)
-            // confirmRecount options - sample input data
-            // a = {
-            //     items: [
-            //         {
-            //             id: 323,
-            //             itemid: '60" 4K Ultra HDTV',
-            //             quantityonhand: 53,
-            //             location: 31,
-            //             description: '60" 4K Ultra HDTV',
-            //             uom: 1,
-            //             uom_name: "Each",
-            //             oldquantityonhand: 53,
-            //             requestedquantity: "20"
-            //         }
-            //     ],
-            //     location: 31
-            // }
-
             const objInventoryAdjustmentRec = record.create({
                 type: record.Type.INVENTORY_ADJUSTMENT,
                 isDynamic: true
@@ -67,7 +48,8 @@ define(['N/query', 'N/record'],
                 objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'item', value: element.id })
                 objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'location', value: options.location })
                 objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'adjustqtyby', value: intQuantity })
-
+                objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'custcol_tc_ims_reason_to_adjust', value: element.reason })
+                objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'memo', value: element.memo })
 
                 // ===== INVENTORY DETAIL =====
                 const invDetail = objInventoryAdjustmentRec.getCurrentSublistSubrecord({ sublistId: 'inventory', fieldId: 'inventorydetail', line: line })
@@ -113,42 +95,7 @@ define(['N/query', 'N/record'],
 
 
             log.debug('grouped', grouped)
-            // a = {
-            //     "646": [
-            //         {
-            //             "id": 115,
-            //             "itemid": `ASUS PG348Q RoG SWIFT 34" Curved 21: 9 QHD IPS G- Sync Monitor`,
-            //             "quantityonhand": 19,
-            //             "location": 31,
-            //             "description": `ASUS PG348Q RoG SWIFT 34" Curved 21: 9 QHD IPS G - Sync Monitor`,
-            //             "uom": 1,
-            //             "uom_name": "Each",
-            //             "oldquantityonhand": 19,
-            //             "requestedquantity": "20",
-            //             "vendor": 646
-            //         }
-            //     ]
-            // }
-            const strSubsidiaryQuery = `SELECT subsidiary FROM location where id = ${options.location}`
-            const objSubsidiary = query.runSuiteQL({ query: strSubsidiaryQuery }).asMappedResults()[0]
             const arrPoIds = []
-            for (const key in grouped) {
-
-                const intVendorId = grouped[key][0].vendor
-                const objPurchaseOrderRec = record.create({ type: record.Type.PURCHASE_ORDER, isDynamic: true })
-                objPurchaseOrderRec.setValue('entity', intVendorId)
-                objPurchaseOrderRec.setValue('subsidiary', objSubsidiary.subsidiary)
-                objPurchaseOrderRec.setValue('location', options.location)
-
-                for (const [line, item] of grouped[key].entries()) {
-                    objPurchaseOrderRec.selectLine({ sublistId: 'item', line: line })
-                    objPurchaseOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: item.id })
-                    objPurchaseOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: item.requestedquantity })
-                    objPurchaseOrderRec.commitLine({ sublistId: 'item', line: line })
-                }
-                const poid = objPurchaseOrderRec.save()
-                arrPoIds.push(poid)
-            }
             return { data: { item: options.items }, inventoryAdjustmentId: intId, purchaseOrderIds: arrPoIds }
         }
 

@@ -26,9 +26,6 @@ export default (props) => {
   })
 
   useEffect(() => {
-    console.log('recountState updated:', recountState)
-  }, [recountState.items])
-  useEffect(() => {
     if (!recountState.barcode) return
     const loadData = async () => {
       const res1 = await $.post(process.env.REACT_APP_NETSUITE_URL, {
@@ -38,7 +35,6 @@ export default (props) => {
         })
       })
       const generalData = JSON.parse(res1)
-      console.log('recountState.page', recountState.page)
       const res2 = await $.post(process.env.REACT_APP_NETSUITE_URL, {
         data: JSON.stringify({
           data: {
@@ -65,54 +61,10 @@ export default (props) => {
   const handleAddToInventoryAdjustments = (e) => {
     e.preventDefault()
     if (form.action == 'recount') {
-      setForm((prev, next) => {
-        return ({
-          ...prev,
-          form: 'discrepancyprompt',
-          currentItem: {
-            ...prev.currentItem
-          }
-        })
-      })
-    }
-    if (form.action == 'request') {
-      setForm(prev => ({
+      setForm((prev, next) => ({
         ...prev,
         form: 'scanmoreform'
       }))
-      setRecountState((prev) => {
-        for (const item of prev.items) {
-          if (item.id === form.currentItem.id) {
-            return prev
-          }
-        }
-
-        return {
-          ...prev,
-          items: [...prev.items, form.currentItem]
-        }
-      })
-    }
-  }
-  const handleItemRequisitionForm = (value) => {
-    setForm(prev => ({
-      ...prev,
-      form: value ? 'recountform' : 'scanmoreform',
-      action: value ? 'request' : 'recount'
-    }))
-    if (!value) {
-      setRecountState((prev) => {
-        for (const item of prev.items) {
-          if (item.id === form.currentItem.id) {
-            return prev
-          }
-        }
-
-        return {
-          ...prev,
-          items: [...prev.items, form.currentItem]
-        }
-      })
     }
   }
   const handleChange = (field, id) => (e) => {
@@ -139,6 +91,17 @@ export default (props) => {
   }
 
   const handleScanMoreForm = (value) => {
+    setRecountState((prev) => {
+      for (const item of prev.items) {
+        if (item.id === form.currentItem.id) {
+          return prev
+        }
+      }
+      return {
+        ...prev,
+        items: [...prev.items, form.currentItem]
+      }
+    })
     if (value) {
       setForm(prev => ({
         ...prev,
@@ -157,7 +120,6 @@ export default (props) => {
         form: 'confirmationform',
         action: 'confirm',
       }))
-      console.log('Show Complete Form')
     }
   }
   const handleConfirmForm = async (value) => {
@@ -199,10 +161,6 @@ export default (props) => {
       }))
     }
   }
-  useEffect(() => {
-    console.log('form updated:', form)
-  }, [form])
-
 
 
   if (form.form == 'recountform')
@@ -245,8 +203,8 @@ export default (props) => {
         <TextField
           label="Quantity"
           type="number"
-          value={form.action == 'request' ? form.currentItem.requestedquantity : form.currentItem.quantityonhand || ''}
-          onChange={handleChange(form.action == 'request' ? "requestedquantity" : "quantityonhand")}
+          value={form.currentItem.quantityonhand || 0}
+          onChange={handleChange("quantityonhand")}
           fullWidth
           size="small"
         />
@@ -257,7 +215,6 @@ export default (props) => {
             value={form.currentItem.location || ''}
             onChange={handleChange("location")}
             label="Location"
-            disabled={!!form.currentItem.location}
           >
             {
               form.locationSelect.map((o, key) => {
@@ -273,7 +230,6 @@ export default (props) => {
             value={form.currentItem.uom || ''}
             onChange={handleChange("uom")}
             label="UOM"
-            disabled={!!form.currentItem.uom}
           >
             {
               form.uomSelect.map((o, key) => {
@@ -282,14 +238,33 @@ export default (props) => {
             }
           </Select>
         </FormControl>
-        {
-          form.form_inventory_discrepancy_form == true && <TextField
-            label="Notes"
-            value={form.currentItem.memo}
-            onChange={handleChange("memo")}
-            fullWidth
-            size="small"
-          />
+        {form.currentItem.oldquantityonhand != form.currentItem.quantityonhand && (
+          <>
+            <FormControl fullWidth size="small">
+              <InputLabel>Reason</InputLabel>
+              <Select
+                value={form.currentItem.reason || ''}
+                onChange={handleChange("reason")}
+                label="Reason"
+                required
+              >
+                {
+                  form.invAdjReason.map((o, key) => {
+                    return <MenuItem value={o.id} key={key}>{o.name}</MenuItem>
+                  })
+                }
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Notes"
+              value={form.currentItem.memo}
+              onChange={handleChange("memo")}
+              fullWidth
+              required={form.currentItem.reason == 9}
+              size="small"
+            />
+          </>)
         }
         <Button
           type="submit"
@@ -301,36 +276,6 @@ export default (props) => {
         </Button>
       </Box >
     )
-  else if (form.form == 'discrepancyprompt')
-    return (
-      <Box
-        component="form"
-        sx={{
-          width: "100%",
-          maxWidth: 400,
-          mx: "auto",
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-        }}
-      >
-        <Typography>Do you need to make an item requisition?</Typography>
-        <Button
-          onClick={() => handleItemRequisitionForm(true)}
-          variant="outlined"
-          sx={{ width: '100%', height: '60px' }}
-        >
-          Yes
-        </Button>
-        <Button
-          onClick={() => handleItemRequisitionForm(false)}
-          variant="outlined"
-          sx={{ width: '100%', height: '60px' }}
-        >
-          No
-        </Button>
-      </Box>)
   else if (form.form == 'scanmoreform')
     return (
       <Box

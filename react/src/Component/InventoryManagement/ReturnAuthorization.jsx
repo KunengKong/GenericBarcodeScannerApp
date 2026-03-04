@@ -43,38 +43,33 @@ export default () => {
     })
   }
 
-  const handleChange = (id, value, type) => {
-    let qty = Number(value) || 0
+
+  const handleChange = (parentId, itemId, value) => {
     setReturnState(prev => ({
       ...prev,
       items: prev.items.map(row => {
-        if (type === 'line') {
-          return {
-            ...row,
-            items: row.items.map(sub => {
-              if (sub.id !== id) return sub
-              if (qty < 0) qty = 0
+        if (row.id !== parentId) return row
+        return {
+          ...row,
+          items: row.items.map(sub => {
+            if (sub.itemid === itemId) {
+              let qty = Number(value)
               if (qty > sub.max_quantity) qty = sub.max_quantity
-              return { ...sub, quantity: qty }
-            })
+              return { ...sub, quantity: Number(qty) }
+            } else { return sub }
           }
+          )
         }
-        if (row.id === id) {
-          if (qty < 0) qty = 0
-          return { ...row, quantity: qty }
-        }
-
-        return row
       })
     }))
   }
 
   const handleConfirmForm = async () => {
-    // setReturnState(prev => ({
-    //   ...prev,
-    //   step: 'processing',
-    //   items: []
-    // }))
+    setReturnState(prev => ({
+      ...prev,
+      step: 'processing',
+      items: []
+    }))
     await $.post(process.env.REACT_APP_NETSUITE_URL, {
       data: JSON.stringify({
         action: 'processReturnAuthorization',
@@ -86,18 +81,18 @@ export default () => {
         }
       })
     }).done((res) => {
-      // setReturnState(prev => ({
-      //   ...prev,
-      //   step: 'complete',
-      //   barcode: null
-      // }))
-      // setTimeout(() => {
-      //   setReturnState(prev => ({
-      //     ...prev,
-      //     step: 'scan',
-      //     barcode: null
-      //   }))
-      // }, 2000)
+      setReturnState(prev => ({
+        ...prev,
+        step: 'complete',
+        barcode: null
+      }))
+      setTimeout(() => {
+        setReturnState(prev => ({
+          ...prev,
+          step: 'scan',
+          barcode: null
+        }))
+      }, 2000)
     })
   }
   const handleReturnFrom = (fromLocation) =>
@@ -164,18 +159,12 @@ export default () => {
             <>
               <Table>
                 <TableBody>
-                  {returnState.items.map(row => row.type == "salesOrder" ? (<>
+                  {returnState.items.map(row => row.type == "RtnAuth" || row.type == "VendAuth" ? (<>
                     <TableRow key={row.id} >
                       <TableCell >
                         <Typography variant="h6" style={{ textAlign: 'top' }}>{row.name}</Typography>
                       </TableCell>
                       <TableCell>
-                        <TextField
-                          value={row.quantity}
-                          onChange={(e) => handleChange(row.id, e.target.value)}
-                          style={{ width: 60 }}
-                          size="small"
-                        />
                       </TableCell>
                     </TableRow>
                     <TableRow key={row.id} style={{ backgroundColor: 'rgb(233, 233, 233)', boxShadow: 'inset 0px 5px 5px #cfcfcf' }}>
@@ -189,7 +178,7 @@ export default () => {
                                 <TableCell>
                                   <TextField
                                     value={item.quantity}
-                                    onChange={(e) => handleChange(item.id, e.target.value, 'line')}
+                                    onChange={(e) => handleChange(row.id, item.itemid, e.target.value)}
                                     style={{ width: 60 }}
                                     size="small"
                                   /></TableCell>
@@ -238,6 +227,16 @@ export default () => {
         </Box>
       </Box>
     </>)
-  }
-
+  } else if (returnState.form == 'processing')
+    return (<>
+      <Box>
+        <Typography>Processing . . .</Typography>
+      </Box>
+    </>)
+  else if (returnState.form == 'complete')
+    return (<>
+      <Box>
+        <Typography>Process Complete!</Typography>
+      </Box>
+    </>)
 }

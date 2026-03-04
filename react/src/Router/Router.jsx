@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react"
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material'
-import { Mail as InboxIcon, MoveToInbox as MailIcon } from '@mui/icons-material'
+import {
+  Mail as InboxIcon,
+  MoveToInbox as MailIcon,
+  Inventory as InventoryIcon,
+  Archive as ArchiveIcon,
+  Unarchive as UnarchiveIcon,
+  AssignmentReturn as AssignmentReturnIcon,
+  Home as HomeIcon,
+  Devices as DevicesIcon
+} from '@mui/icons-material'
 import { FixAssets } from '../Component/FixAssets/FixAssets'
 import { HomePage } from '../Component/Home/HomePage'
 import Recount from '../Component/InventoryManagement/Recount'
@@ -11,16 +20,16 @@ import ReturnAuthorization from '../Component/InventoryManagement/ReturnAuthoriz
 
 const HomeMenuList = {
   Home: [
-    { label: 'Home', href: '/', element: <HomePage /> }
+    { label: 'Home', href: '/', element: <HomePage />, icon: <HomeIcon /> }
   ],
   InventoryManagement: [
-    { alias: 'Inventory Recount', label: 'Recount', href: '/item/recount/scan', element: <Recount /> },
-    { alias: 'Inbound Inventory', label: 'In', href: '/item/inbound/scan', element: <Inbound /> },
-    { alias: 'Outbound Inventory', label: 'Out', href: '/item/outbound/scan', element: <Outbound /> },
-    { alias: 'Return Item', label: 'Return Item', href: '/item/return/scan', element: <ReturnAuthorization /> },
+    { alias: 'Inventory Recount', label: 'Recount', href: '/item/recount/scan', element: <Recount />, icon: <InventoryIcon /> },
+    { alias: 'Inbound Inventory', label: 'In', href: '/item/inbound/scan', element: <Inbound />, icon: <ArchiveIcon /> },
+    { alias: 'Outbound Inventory', label: 'Out', href: '/item/outbound/scan', element: <Outbound />, icon: <UnarchiveIcon /> },
+    { alias: 'Return Item', label: 'Return Item', href: '/item/return/scan', element: <ReturnAuthorization />, icon: <AssignmentReturnIcon /> },
   ],
   // FixAssets: [
-  //   { label: 'Fix Assets', href: '/fixasset/scan', element: <FixAssets /> },
+  //   { label: 'Fix Assets', href: '/fixasset/scan', element: <FixAssets />, icon: <DevicesIcon /> },
   // ],
 }
 
@@ -46,7 +55,7 @@ export const Router = (prop) => {
 
 export const DrawerList = (props) => {
   const { setMainAppState } = props
-  
+
   // setMainAppState(prev => { return { ...prev, title: title } })
   const handleTitleChange = (title) => {
     setMainAppState(prev => { return { ...prev, title: title } })
@@ -66,7 +75,7 @@ export const DrawerList = (props) => {
                       <Link to={obj.href} style={{ color: 'black', textDecoration: 'none', width: '100%' }} onClick={() => { handleTitleChange(obj.alias) }}>
                         <ListItemButton >
                           <ListItemIcon>
-                            {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+                            {obj.icon}
                           </ListItemIcon>
                           <ListItemText primary={obj.label} />
                         </ListItemButton>

@@ -12,20 +12,26 @@ define(['N/query', 'N/record'],
         PUBLIC.outboundItemRecieptLookUp = (options) => {
             log.debug('outboundItemRecieptLookUp', options)
             const objOutput = {}
-
+            objOutput.isCustomer = options.step == 'outforcustomer'
             const strItemReceiptQuery = `SELECT
                     transaction.id,
                     BUILTIN.DF(transaction.id) as transaction_name,
                     transaction.custbody_tc_barcode_ean_13 as barcode,
                     transactionline.item as itemid,
                     BUILTIN.DF(transactionline.item) as itemname,
-                    transactionline.quantity,
+                    0 as quantity,
+                    ABS(transactionline.quantity) - ABS(transactionline.quantitypicked) as max_quantity,
+                    transactionline.location as fromlocation,
+                    transaction.transferlocation as tolocation,
                 FROM transaction
                 JOIN transactionline
                     ON transaction.id = transactionline.transaction
-                WHERE transaction.type = 'ItemRcpt'
+                WHERE transaction.type = '${objOutput.isCustomer ? 'SalesOrd' : 'TrnfrOrd'}'
                 AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'
-                AND transactionline.mainline = 'F'`
+                AND transactionline.mainline = 'F'
+                AND transactionline.item > 0
+                ${objOutput.isCustomer ? '' : "AND transactionline.hasfulfillableitems = 'T'"}`
+            log.debug('strItemReceiptQuery', strItemReceiptQuery)
             const arrItemReceiptResult = query.runSuiteQL({ query: strItemReceiptQuery }).asMappedResults()
 
             log.debug('arrItemReceiptResult', arrItemReceiptResult)
@@ -42,6 +48,8 @@ define(['N/query', 'N/record'],
 
             if (!!arrItemReceiptResult.length) {
                 objOutput.id = arrItemReceiptResult[0].id
+                objOutput.fromLocation = arrItemReceiptResult[0].fromlocation
+                objOutput.toLocation = arrItemReceiptResult[0].tolocation
                 objOutput.name = arrItemReceiptResult[0].transaction_name
                 objOutput.items = arrItemReceiptResult
                 objOutput.type = "itemReceipt"
@@ -53,65 +61,84 @@ define(['N/query', 'N/record'],
             log.debug('objOutput', objOutput)
             return objOutput
         }
-        PUBLIC.processOutbound = (options) => {
-            log.debug('processOutbound', options)
+        PUBLIC.processOutboundForCustomer = (options) => {
+            log.debug('processOutboundForCustomer', options)
+            const objOutput = {}
             try {
-                const objSalesOrderRec = record.create({ type: record.Type.SALES_ORDER, isDynamic: true })
-                objSalesOrderRec.setValue('entity', options.customer)
-                objSalesOrderRec.setValue('location', options.location)
-                let lineCount = 0
-                for (const element of options.items) {
-                    if (element.type == "item") {
-                        objSalesOrderRec.selectLine({ sublistId: 'item', line: lineCount })
-                        objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: element.item.id })
-                        objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: element.quantity })
-                        objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'custcol_tc_barcode_ean_13', value: element.barcode })
-                        objSalesOrderRec.commitLine({ sublistId: 'item', line: lineCount })
-                        lineCount++
-                    }
-                    if (element.type == "itemReceipt") {
-                        for (const line of element.items) {
-                            objSalesOrderRec.selectLine({ sublistId: 'item', line: lineCount })
-                            objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: line.itemid })
-                            objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: line.quantity })
-                            objSalesOrderRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'custcol_tc_barcode_ean_13', value: line.barcode })
-                            objSalesOrderRec.commitLine({ sublistId: 'item', line: lineCount })
-                            lineCount++
-                        }
-                    }
-                }
-
-                const intSalesOrderId = objSalesOrderRec.save()
-                log.debug('intSalesOrderId', intSalesOrderId)
-
+                const strSOQuery = `SELECT
+                    transaction.id,
+                    transaction.custbody_tc_barcode_ean_13 as barcode
+                FROM transaction
+                WHERE transaction.type = 'SalesOrd'
+                AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'`
+                const objSOResult = query.runSuiteQL({ query: strSOQuery }).asMappedResults()[0]
+                log.debug('objSOResult', objSOResult)
 
                 const objItemFullfilmentRec = record.transform({
                     fromType: record.Type.SALES_ORDER,
-                    fromId: intSalesOrderId,
+                    fromId: objSOResult.id,
                     toType: record.Type.ITEM_FULFILLMENT,
                     isDynamic: true,
                 })
 
-                objItemFullfilmentRec.setValue('shipstatus', 'C')
-                objItemFullfilmentRec.setValue('custbody_tc_barcode_ean_13', '------')
+                objItemFullfilmentRec.setValue('custbody_tc_barcode_ean_13', null)
                 const intIFLineCount = objItemFullfilmentRec.getLineCount({ sublistId: 'item' })
                 log.debug('intIFLineCount', intIFLineCount)
                 for (let index = 0; index < intIFLineCount; index++) {
-                    const intQuantity = objItemFullfilmentRec.getSublistValue({ sublistId: 'item', fieldId: 'quantityremaining', line: index })
-
-                    log.debug('intQuantity', intQuantity)
                     objItemFullfilmentRec.selectLine({ sublistId: 'item', line: index })
-                    objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: intQuantity })
-                    // objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: true })
+                    objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: false })
                     objItemFullfilmentRec.commitLine({ sublistId: 'item', line: index })
-
                 }
-                const intItemReceiptId = objItemFullfilmentRec.save()
-                log.debug('intItemReceiptId', intItemReceiptId)
+                for (const element of options.items[0].items) {
+                    log.debug('element', element)
+                    const intLinePOItem = objItemFullfilmentRec.findSublistLineWithValue({ sublistId: 'item', fieldId: 'item', value: element.itemid })
+                    if (intLinePOItem < 0) continue
+                    objItemFullfilmentRec.selectLine({ sublistId: 'item', line: intLinePOItem })
+                    objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'itemreceive', value: !!element.quantity })
+                    objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: element.quantity })
+                    objItemFullfilmentRec.setCurrentSublistValue({ sublistId: 'item', fieldId: 'location', value: options.fromLocation })
+                    objItemFullfilmentRec.commitLine({ sublistId: 'item', line: intLinePOItem })
+                }
+                objOutput.intIFId = objItemFullfilmentRec.save()
             } catch (e) {
                 log.error('processOutbound', e)
             }
-            const objOutput = {}
+            log.debug('objOutput', objOutput)
+            return objOutput
+        }
+
+        PUBLIC.outboundProcessIF = (options) => {
+            log.debug('outboundProcessIF', options)
+            const objOutput = {
+                step: options.step
+            }
+            try {
+                const strIFQuery = `SELECT
+                        transaction.id,
+                        transaction.custbody_tc_barcode_ean_13 as barcode
+                    FROM transaction
+                    WHERE transaction.type = 'ItemShip'
+                    AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'`
+                log.debug('objIFResult', strIFQuery)
+                const objIFResult = query.runSuiteQL({ query: strIFQuery }).asMappedResults()[0]
+                log.debug('objIFResult', objIFResult)
+                if (options.step == 'pack')
+                    objOutput.shipstatus = 'B'
+                if (options.step == 'ship')
+                    objOutput.shipstatus = 'C'
+
+                objOutput.intIFId = record.submitFields({
+                    type: record.Type.ITEM_FULFILLMENT,
+                    id: objIFResult.id,
+                    values: {
+                        shipstatus: objOutput.shipstatus //B = Packed, C = Shipped
+                    }
+                })
+
+            } catch (e) {
+                log.error('outboundProcessIF', e)
+            }
+            log.debug('objOutput', objOutput)
             return objOutput
         }
         return PUBLIC

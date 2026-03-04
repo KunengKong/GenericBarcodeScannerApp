@@ -19,12 +19,20 @@ define(['N/query'],
             const strLocationQuery = `SELECT
                     id as id,
                     BUILTIN.DF(id) as name,
-                FROM location`
+                FROM location
+                WHERE location.isinactive = 'F'`
             const arrLocationResult = query.runSuiteQL({ query: strLocationQuery }).asMappedResults()
+
+            const strInvAdjReasonQuery = `SELECT
+                id, name
+                FROM customlist_tc_ims_reason_inv_adjust
+                WHERE isinactive ='F'`
+            const arrInvAdjReasonResult = query.runSuiteQL({ query: strInvAdjReasonQuery }).asMappedResults()
 
             return {
                 uomSelect: arrUomResult,
-                locationSelect: arrLocationResult
+                locationSelect: arrLocationResult,
+                invAdjReason: arrInvAdjReasonResult
             }
         }
         return PUBLIC
