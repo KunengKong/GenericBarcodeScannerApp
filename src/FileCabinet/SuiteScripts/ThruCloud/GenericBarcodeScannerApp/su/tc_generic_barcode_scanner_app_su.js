@@ -75,7 +75,11 @@ define([
 
                 } catch (e) {
                     log.error('e', e)
-                    scriptContext.response.write(e.message)
+                    let output = {
+                        error: e,
+                        items: []
+                    }
+                    scriptContext.response.write(JSON.stringify(output))
                 }
             }
         }

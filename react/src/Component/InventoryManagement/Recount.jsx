@@ -4,7 +4,8 @@ import { Box, Typography, Grid, Button, TextField } from '@mui/material'
 import Scanner from '../Scanner/Scan'
 import InventoryForm from './InventoryForm'
 
-export default () => {
+export default (props) => {
+  const { mainAppState } = props
   const [recountState, setRecountState] = useState({
     page: 'recount',
     items: [],
@@ -14,9 +15,16 @@ export default () => {
   })
 
   if (recountState.barcode == null && recountState.step == 'scan') {
-    return (<Scanner state={setRecountState} />)
+    return (<Scanner state={recountState} setState={setRecountState}/>)
   } else if (recountState.step == 'recountItemForm') {
-    return (<InventoryForm page='Recount' setRecountState={setRecountState} recountState={recountState} />)
+    return (
+      <InventoryForm
+        mainAppState={mainAppState}
+        page='Recount'
+        setRecountState={setRecountState}
+        recountState={recountState}
+      />
+    )
   }
 
 }

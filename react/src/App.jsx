@@ -16,13 +16,13 @@ import { Menu as MenuIcon } from '@mui/icons-material'
 
 export default function App() {
 
-  const [mainApp, setMainApp] = useState({ title: '' })
+  const [mainAppState, setMainAppState] = useState({ title: '', subsidiary: 2, location: 100 })
 
   useEffect(() => {
     // Code to run when the URL (location) changes
-    console.log('The URL has changed to:', mainApp.title)
+    console.log('The URL has changed to:', mainAppState.title)
     // You can perform actions here, like logging a page view for analytics
-  }, [mainApp.title])
+  }, [mainAppState.title])
   const [open, setOpen] = useState(false)
   const toggleDrawer = (newOpen) => () => {
     setOpen(newOpen)
@@ -54,7 +54,7 @@ export default function App() {
           {AppBarViewCompatibility.map((obj, index) => (
             <>
               <Box sx={{ display: obj.display, }}>
-                <DrawerList position={obj.position} setMainAppState={setMainApp} />
+                <DrawerList position={obj.position} setMainAppState={setMainAppState} />
               </Box>
             </>
           ))
@@ -68,7 +68,7 @@ export default function App() {
 
                 <Container maxWidth="xl">
                   <Toolbar disableGutters>
-                    {mainApp.title}
+                    {mainAppState.title}
                     <Box sx={{ flexGrow: 1 }} />
                     <IconButton
                       size="large"
@@ -80,7 +80,7 @@ export default function App() {
                       style={{ display: 'flex', alignItems: 'center' }}
                     >
                       <MenuIcon />
-                      <Typography style={{fontSize:10}}>Menu</Typography>
+                      <Typography style={{ fontSize: 10 }}>Menu</Typography>
                     </IconButton>
                   </Toolbar>
                 </Container>
@@ -89,7 +89,7 @@ export default function App() {
         }
 
 
-        < Router />
+        < Router mainAppState={mainAppState} />
       </BrowserRouter>
     </>
   )

@@ -16,47 +16,65 @@ import {
 import $ from "jquery"
 
 export default (props) => {
-  const { recountState, setRecountState } = props
-  const [form, setForm] = useState({
-    form: 'recountform', //recountform, discrepancyprompt, discrepancyform
-    action: 'recount',
-    uomSelect: [],
-    locationSelect: [],
-    currentItem: {}
-  })
+  const { mainAppState, recountState, setRecountState } = props
+  const [form, setForm] = useState(
+    {
+      form: 'recountform', //recountform, discrepancyprompt, discrepancyform
+      action: 'recount',
+      uomSelect: [],
+      locationSelect: [],
+      currentItem: {}
+    }
+  )
 
   useEffect(() => {
     if (!recountState.barcode) return
     const loadData = async () => {
-      const res1 = await $.post(process.env.REACT_APP_NETSUITE_URL, {
-        data: JSON.stringify({
-          action: 'uomandlocation',
-          page: 'general'
-        })
-      })
-      const generalData = JSON.parse(res1)
-      const res2 = await $.post(process.env.REACT_APP_NETSUITE_URL, {
+      const objItemSearch = await $.post(process.env.REACT_APP_NETSUITE_URL, {
         data: JSON.stringify({
           data: {
             barcode: recountState.barcode,
-            location: recountState.location
+            location: recountState.location,
+            subsidiary: mainAppState.subsidiary
           },
           action: 'search',
           page: recountState.page
         })
       })
 
-      const itemData = JSON.parse(res2)
+      const itemData = JSON.parse(objItemSearch)
+
+      const res1 = await $.post(process.env.REACT_APP_NETSUITE_URL, {
+        data: JSON.stringify({
+          action: 'uomandlocation',
+          page: 'general',
+          data: {
+            subsidiary: mainAppState.subsidiary,
+            parentUom: itemData.data.item.uom_parent
+          }
+        })
+      })
+      const generalData = JSON.parse(res1)
+      console.log('itemData, ', itemData)
       setForm(prev => ({
         ...prev,
         currentItem: { ...itemData.data.item },
         ...generalData,
       }))
-
+      setRecountState(prev => ({
+        ...prev,
+        ...generalData
+      }))
     }
     loadData()
 
   }, [recountState.barcode])
+
+  useEffect(() => {
+
+    console.log('recountState', recountState)
+
+  }, [recountState])
 
   const handleAddToInventoryAdjustments = (e) => {
     e.preventDefault()
@@ -67,36 +85,53 @@ export default (props) => {
       }))
     }
   }
-  const handleChange = (field, id) => (e) => {
-    if (field === "editQuantity") {
-      const newQty = Number(e.target.value)
-
-      setRecountState(prev => ({
-        ...prev,
-        items: prev.items.map(item =>
-          item.id === id
-            ? { ...item, quantityonhand: newQty }
-            : item
-        )
-      }))
-    } else {
-      setForm(prev => ({
-        ...prev,
-        currentItem: {
-          ...prev.currentItem,
-          [field]: e.target.value
+  const handleChange = (field, uniqueKey) => async (e) => {
+    if (uniqueKey) {
+      setRecountState(prev => {
+        return {
+          ...prev,
+          items: prev.items.map(item =>
+            item.uniqueKey === uniqueKey
+              ? { ...item, [field]: Number(e.target.value) }
+              : item
+          )
         }
-      }))
+      })
+    } else {
+      setForm(prev => {
+        if (field == 'location') {
+          let intNewQuantity = 0
+          try {
+            intNewQuantity = prev
+              .currentItem
+              .itemPerLocation
+              .filter(obj => obj.location == e.target.value)[0]
+              .quantityonhand
+          } catch (e) {
+            console.log('location not found making new quantity for the location . . .')
+          }
+          prev.currentItem.oldquantityonhand = intNewQuantity
+          prev.currentItem.quantityonhand = intNewQuantity
+        }
+        return {
+          ...prev,
+          currentItem: {
+            ...prev.currentItem,
+            [field]: e.target.value
+          }
+        }
+      })
     }
   }
 
   const handleScanMoreForm = (value) => {
     setRecountState((prev) => {
       for (const item of prev.items) {
-        if (item.id === form.currentItem.id) {
+        if (item.id === form.currentItem.id && item.location === form.currentItem.location) {
           return prev
         }
       }
+      form.currentItem.uniqueKey = new Date().getTime()
       return {
         ...prev,
         items: [...prev.items, form.currentItem]
@@ -162,15 +197,13 @@ export default (props) => {
     }
   }
 
-
   if (form.form == 'recountform')
     return (
       <Box
         component="form"
         onSubmit={handleAddToInventoryAdjustments}
         sx={{
-          width: "100%",
-          maxWidth: 400,
+          width: "90%",
           mx: "auto",
           p: 2,
           display: "flex",
@@ -215,6 +248,7 @@ export default (props) => {
             value={form.currentItem.location || ''}
             onChange={handleChange("location")}
             label="Location"
+            required
           >
             {
               form.locationSelect.map((o, key) => {
@@ -230,6 +264,7 @@ export default (props) => {
             value={form.currentItem.uom || ''}
             onChange={handleChange("uom")}
             label="UOM"
+            required
           >
             {
               form.uomSelect.map((o, key) => {
@@ -281,8 +316,7 @@ export default (props) => {
       <Box
         component="form"
         sx={{
-          width: "100%",
-          maxWidth: 400,
+          width: "90%",
           mx: "auto",
           p: 2,
           display: "flex",
@@ -311,8 +345,7 @@ export default (props) => {
       <Box
         component="form"
         sx={{
-          width: "100%",
-          maxWidth: 400,
+          width: "90%",
           mx: "auto",
           p: 2,
           display: "flex",
@@ -325,25 +358,38 @@ export default (props) => {
             <TableBody>
               <TableRow>
                 <TableCell>Item Name</TableCell>
+                <TableCell>Location</TableCell>
                 <TableCell>Quantity on Hand</TableCell>
                 <TableCell>Counted Quantity</TableCell>
                 <TableCell>UOM</TableCell>
               </TableRow>
               {recountState.items.map(row => (
-                <TableRow key={row.id}>
+                <TableRow key={row.uniqueKey}>
                   <TableCell>{row.itemid}</TableCell>
-                  <TableCell>{row.oldquantityonhand || row.quantityonhand}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={row.location || ''}
+                      onChange={handleChange("location", row.uniqueKey)}
+                      label="Location"
+                    >
+                      {
+                        row.itemPerLocation.map((o, key) => {
+                          return <MenuItem value={o.location} key={key}>{o.name || o.name}</MenuItem>
+                        })
+                      }
+                    </Select>
+                  </TableCell>
+                  <TableCell>{row.oldquantityonhand >= 0 ? row.oldquantityonhand : row.quantityonhand}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <TextField
                         value={parseInt(row.quantityonhand)}
-                        onChange={handleChange("editQuantity", row.id)}
-                        fullWidth
+                        onChange={handleChange("quantityonhand", row.uniqueKey)}
                         size="small"
                       />
                     </Stack>
                   </TableCell>
-                  <TableCell>{row.uom_name}</TableCell>
+                  <TableCell>{recountState.uomSelect.find(o => o.id == row.uom)?.name}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

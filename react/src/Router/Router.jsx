@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, cloneElement } from "react"
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material'
 import {
@@ -35,18 +35,18 @@ const HomeMenuList = {
 
 const HomeMenuListEntries = Object.entries(HomeMenuList)
 export const Router = (prop) => {
+  const { mainAppState } = prop
   return (<>
     <div style={{ paddingTop: '25px' }}></div>
     <Routes>
-      {HomeMenuListEntries.map((objName, menus) => {
-        return (
-          <>
-            {
-              objName[1].map((menus, index) =>
-                <Route key={index} path={menus.href} element={menus.element} />)
-            }
-          </>)
-      }
+      {HomeMenuListEntries.map(([_, menuList]) =>
+        menuList.map((menu, index) => (
+          <Route
+            key={index}
+            path={menu.href}
+            element={cloneElement(menu.element, { mainAppState })}
+          />
+        ))
       )}
     </Routes>
   </>
@@ -56,7 +56,6 @@ export const Router = (prop) => {
 export const DrawerList = (props) => {
   const { setMainAppState } = props
 
-  // setMainAppState(prev => { return { ...prev, title: title } })
   const handleTitleChange = (title) => {
     setMainAppState(prev => { return { ...prev, title: title } })
   }

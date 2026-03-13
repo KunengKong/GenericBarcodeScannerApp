@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
-
-import { Box, TextField, Button, Typography, TableBody, TableRow, TableCell, Stack, Table } from "@mui/material"
+import { Box, TextField, Button, Typography, TableBody, TableRow, TableCell, Table, FormControl, InputLabel, Select, MenuItem } from "@mui/material"
 import Scanner from '../Scanner/Scan'
 import $ from "jquery"
 
 
-export default () => {
+export default (props) => {
+  const { mainAppState } = props
   const [returnState, setReturnState] = useState({
     page: 'return',
     items: [],
@@ -28,35 +28,55 @@ export default () => {
         page: returnState.page,
         data: {
           barcode: returnState.barcode,
-          location: returnState.location,
+          subsidiary: mainAppState.subsidiary,
           returnFrom: returnState.returnFrom
         }
       })
     }).done((res) => {
-      const objResult = JSON.parse(res)
-      console.log('objResult | v', objResult)
+      const objItemLookupResult = JSON.parse(res)
+      console.log('objResult | objItemLookupResult', objItemLookupResult)
+
+      if (!objItemLookupResult.items.length) {
+        alert('Transaction not found.')
+        return true
+      }
+      for (const [key, _] of objItemLookupResult.items.entries()) {
+        objItemLookupResult.items[key].uniqueKey = Math.floor(Math.random() * 1000)
+        // objItemLookupResult.items[key].location = mainAppState.location
+      }
       setReturnState(prev => ({
         ...prev,
         barcode: null,
-        items: [...prev.items, objResult]
+        items: [...prev.items, objItemLookupResult]
       }))
     })
   }
 
 
-  const handleChange = (parentId, itemId, value) => {
+
+  const handleChange = (options) => (e) => {
+    const { field, rowId, itemId } = options
+    const value = e.target.value
     setReturnState(prev => ({
       ...prev,
       items: prev.items.map(row => {
-        if (row.id !== parentId) return row
+        if (row.id !== rowId) return row
         return {
           ...row,
           items: row.items.map(sub => {
-            if (sub.itemid === itemId) {
+            if (field == 'quantity') {
               let qty = Number(value)
-              if (qty > sub.max_quantity) qty = sub.max_quantity
-              return { ...sub, quantity: Number(qty) }
-            } else { return sub }
+              // if (qty > sub.max_quantity) qty = sub.max_quantity
+              if (sub.uniqueKey === itemId)
+                return { ...sub, quantity: qty }
+              else
+                return sub
+            } else {
+              if (sub.uniqueKey === itemId)
+                return { ...sub, [field]: value }
+              else
+                return sub
+            }
           }
           )
         }
@@ -112,8 +132,7 @@ export default () => {
       <Box
         component="form"
         sx={{
-          width: "100%",
-          maxWidth: 400,
+          width: "90%",
           mx: "auto",
           p: 2,
           display: "flex",
@@ -141,13 +160,12 @@ export default () => {
     </>)
   } else if (returnState.step === 'scan') {
     return (<>
-      <Scanner state={setReturnState} />
+      <Scanner state={returnState} setState={setReturnState} />
       <Box>
         <Box
           component="form"
           sx={{
-            width: "100%",
-            maxWidth: 400,
+            width: "90%",
             mx: "auto",
             p: 2,
             display: "flex",
@@ -172,16 +190,47 @@ export default () => {
                         {/* subitems */}
                         <Table style={{ padding: '0px', margin: '0px' }}>
                           <TableBody>
+                            <TableRow>
+                              <TableCell>Item Name</TableCell>
+                              <TableCell>Location</TableCell>
+                              <TableCell>Quantity</TableCell>
+                              <TableCell>Quantity to Return</TableCell>
+                              <TableCell>UOM</TableCell>
+                            </TableRow>
                             {row.items.map(item => (
                               <TableRow key={item.id}>
                                 <TableCell>{item.itemname}</TableCell>
                                 <TableCell>
+                                  <Select
+                                    value={item.location || mainAppState.location}
+                                    onChange={handleChange({
+                                      field: 'location',
+                                      rowId: row.id,
+                                      itemId: item.uniqueKey,
+                                    })}
+                                    label="Location"
+                                  >
+                                    {
+                                      item.itemPerLocation.map((o, key) => {
+                                        return <MenuItem value={o.location} key={key}>{o.name || o.name}</MenuItem>
+                                      })
+                                    }
+                                  </Select>
+                                </TableCell>
+                                <TableCell>{item.quantityinitialized}</TableCell>
+                                <TableCell>
                                   <TextField
                                     value={item.quantity}
-                                    onChange={(e) => handleChange(row.id, item.itemid, e.target.value)}
+                                    onChange={handleChange({
+                                      field: 'quantity',
+                                      rowId: row.id,
+                                      itemId: item.uniqueKey,
+                                    })}
                                     style={{ width: 60 }}
                                     size="small"
-                                  /></TableCell>
+                                  />
+                                </TableCell>
+                                <TableCell>{item.uomname}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -227,13 +276,13 @@ export default () => {
         </Box>
       </Box>
     </>)
-  } else if (returnState.form == 'processing')
+  } else if (returnState.step == 'processing')
     return (<>
       <Box>
         <Typography>Processing . . .</Typography>
       </Box>
     </>)
-  else if (returnState.form == 'complete')
+  else if (returnState.step == 'complete')
     return (<>
       <Box>
         <Typography>Process Complete!</Typography>

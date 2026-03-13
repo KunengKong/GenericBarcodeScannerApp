@@ -4,7 +4,8 @@ import Scanner from '../Scanner/Scan'
 import $ from "jquery"
 
 
-export default () => {
+export default (props) => {
+  const { mainAppState } = props
   const [outboundState, setOutboundState] = useState({
     page: 'outbound',
     items: process.env.REACT_APP_DEBUG_MODE === 'true' ? [] : [], //objSampleData
@@ -35,6 +36,15 @@ export default () => {
       }).done(async (res) => {
         const objItemLookupResult = JSON.parse(res)
         console.log('objItemLookupResult | ', objItemLookupResult)
+        if (!objItemLookupResult.items.length) {
+          alert('Transaction not found.')
+          return true
+        }
+        for (const [key, _] of objItemLookupResult.items.entries()) {
+          objItemLookupResult.items[key].uniqueKey = Math.floor(Math.random() * 1000)
+          if (!objItemLookupResult.items[key].toLocation)
+            objItemLookupResult.items[key].location = mainAppState.location
+        }
         setOutboundState(prev => ({
           ...prev,
           fromLocation: objItemLookupResult.fromLocation || '',
@@ -119,11 +129,17 @@ export default () => {
       </Box>
     </>)
   else if (outboundState.step === 'outforcustomer')
-    return (<OutForCustomer outboundState={outboundState} setOutboundState={setOutboundState} />)
+    return (<OutForCustomer
+      outboundState={outboundState}
+      setOutboundState={setOutboundState}
+      mainAppState={mainAppState} />)
   else if (outboundState.step === 'outforbranch')
-    return (<OutForBranch outboundState={outboundState} setOutboundState={setOutboundState} />)
+    return (<OutForBranch
+      outboundState={outboundState}
+      setOutboundState={setOutboundState}
+      mainAppState={mainAppState} />)
   else if (outboundState.step === 'pack' || outboundState.step === 'ship')
-    return (<Scanner state={setOutboundState} />)
+    return (<Scanner state={outboundState} setState={setOutboundState} />)
   else if (outboundState.step == 'processing')
     return (<Processing />)
   else if (outboundState.step == 'complete')
@@ -131,7 +147,7 @@ export default () => {
 }
 
 const OutForCustomer = (props) => {
-  const { outboundState, setOutboundState } = props
+  const { outboundState, setOutboundState, mainAppState } = props
   const handleConfirmForm = async () => {
     setOutboundState(prev => ({
       ...prev,
@@ -140,12 +156,13 @@ const OutForCustomer = (props) => {
     }))
     await $.post(process.env.REACT_APP_NETSUITE_URL, {
       data: JSON.stringify({
-        action: 'processOutboundForCustomer',
+        action: 'processOutbound',
         page: outboundState.page,
         data: {
           items: outboundState.items,
           fromLocation: outboundState.fromLocation,
-          barcode: outboundState.barcode
+          barcode: outboundState.barcode,
+          type: 'customer'
         }
       })
     }).done((res) => {
@@ -164,11 +181,12 @@ const OutForCustomer = (props) => {
     })
   }
   return (<>
-    <Scanner state={setOutboundState} />
+    <Scanner state={outboundState} setState={setOutboundState} />
     <FormLocation
       outboundState={outboundState}
       setOutboundState={setOutboundState} />
     <FormOutbound
+      mainAppState={mainAppState}
       outboundState={outboundState}
       setOutboundState={setOutboundState}
       handleConfirmForm={handleConfirmForm}
@@ -177,7 +195,7 @@ const OutForCustomer = (props) => {
 }
 
 const OutForBranch = (props) => {
-  const { outboundState, setOutboundState } = props
+  const { outboundState, setOutboundState, mainAppState } = props
   const handleConfirmForm = async () => {
     setOutboundState(prev => ({
       ...prev,
@@ -186,13 +204,14 @@ const OutForBranch = (props) => {
     }))
     await $.post(process.env.REACT_APP_NETSUITE_URL, {
       data: JSON.stringify({
-        action: 'processOutboundForBranch',
+        action: 'processOutbound',
         page: outboundState.page,
         data: {
           items: outboundState.items,
           fromLocation: outboundState.fromLocation,
           toLocation: outboundState.toLocation,
-          barcode: outboundState.barcode
+          barcode: outboundState.barcode,
+          type: 'branch'
         }
       })
     }).done((res) => {
@@ -211,11 +230,12 @@ const OutForBranch = (props) => {
     })
   }
   return (<>
-    <Scanner state={setOutboundState} />
+    <Scanner state={outboundState} setState={setOutboundState} />
     <FormLocation
       outboundState={outboundState}
       setOutboundState={setOutboundState} />
     <FormOutbound
+      mainAppState={mainAppState}
       outboundState={outboundState}
       setOutboundState={setOutboundState}
       handleConfirmForm={handleConfirmForm}
@@ -240,22 +260,32 @@ const ProcessComplete = () => {
 }
 
 const FormOutbound = (props) => {
-  const { outboundState, setOutboundState, handleConfirmForm } = props
-  const handleChange = (parentId, itemId, value) => {
+  const { mainAppState, outboundState, setOutboundState, handleConfirmForm } = props
+  const handleChange = (options) => (e) => {
+    const { field, rowId, itemId } = options
+    const value = e.target.value
     setOutboundState(prev => ({
       ...prev,
       items: prev.items.map(row => {
-        if (row.id !== parentId) return row
-
+        if (row.id !== rowId) return row
         return {
           ...row,
           items: row.items.map(sub => {
-            let qty = Number(value)
-            if (qty > sub.max_quantity) qty = sub.max_quantity
-            if (sub.itemid === itemId)
-              return { ...sub, quantity: qty }
-            else return sub
-          })
+            if (field == 'quantity') {
+              let qty = Number(value)
+              // if (qty > sub.max_quantity) qty = sub.max_quantity
+              if (sub.uniqueKey === itemId)
+                return { ...sub, quantity: qty }
+              else
+                return sub
+            } else {
+              if (sub.uniqueKey === itemId)
+                return { ...sub, [field]: value }
+              else
+                return sub
+            }
+          }
+          )
         }
       })
     }))
@@ -265,8 +295,7 @@ const FormOutbound = (props) => {
       <Box
         component="form"
         sx={{
-          width: "100%",
-          maxWidth: 400,
+          width: "90%",
           mx: "auto",
           p: 2,
           display: "flex",
@@ -287,29 +316,68 @@ const FormOutbound = (props) => {
                     <TableCell>
                     </TableCell>
                   </TableRow>
-                  <TableRow key={row.id} style={{ backgroundColor: 'rgb(233, 233, 233)', boxShadow: 'inset 0px 5px 5px #cfcfcf' }}>
+                  <TableRow style={{ backgroundColor: 'rgb(233, 233, 233)', boxShadow: 'inset 0px 5px 5px #cfcfcf' }}>
                     <TableCell style={{ padding: '0px', margin: '0px' }} colSpan={2} >
                       {/* subitems */}
                       <Table style={{ padding: '0px', margin: '0px' }}>
                         <TableBody>
+                          <TableRow>
+                            <TableCell>Item Name</TableCell>
+                            {!row.toLocation && <TableCell>Location</TableCell>}
+                            <TableCell>Qty Ordered</TableCell>
+                            {/* <TableCell>Qty Picked</TableCell> */}
+                            {/* <TableCell>Qty Packed</TableCell> */}
+                            {/* <TableCell>Qty Shipped</TableCell> */}
+                            <TableCell>Qty to Fulfill</TableCell>
+                            <TableCell>UOM</TableCell>
+                          </TableRow>
                           {row.items.map(item => (
                             <TableRow key={item.itemid}>
                               <TableCell>{item.itemname}</TableCell>
+                              {
+                                !row.toLocation && <TableCell>
+                                  <Select
+                                    value={item.location}
+                                    onChange={handleChange({
+                                      field: 'location',
+                                      rowId: row.id,
+                                      itemId: item.uniqueKey,
+                                    })}
+                                    label="Loc1ation"
+                                  >
+                                    {
+                                      item.itemPerLocation.map((o, key) => {
+                                        return <MenuItem value={o.location} key={key}>{o.name || o.name}</MenuItem>
+                                      })
+                                    }
+                                  </Select>
+                                </TableCell>
+                              }
+                              <TableCell>{item.quantityinitialized || 0}</TableCell>
+                              {/* <TableCell>{item.quantitypicked || 0}</TableCell> */}
+                              {/* <TableCell>{item.quantitypacked || 0}</TableCell> */}
+                              {/* <TableCell>{item.quantityshiprecv || 0}</TableCell> */}
+
                               <TableCell>
                                 <TextField
                                   value={item.quantity}
-                                  onChange={(e) => handleChange(row.id, item.itemid, e.target.value)}
+                                  onChange={handleChange({
+                                    field: 'quantity',
+                                    rowId: row.id,
+                                    itemId: item.uniqueKey,
+                                  })}
                                   style={{ width: 60, backgroundColor: '#fff' }}
                                   size="small"
                                 />
                               </TableCell>
+                              <TableCell>{item.uomname}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                       {/* subitems */}
                     </TableCell >
-                  </TableRow>
+                  </TableRow >
                 </>) : (
                   <TableRow key={row.id} >
                     <TableCell >
@@ -345,7 +413,7 @@ const FormOutbound = (props) => {
             </Button>
           </> : ''}
       </Box>
-    </Box>
+    </Box >
   </>)
 }
 

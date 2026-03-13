@@ -15,21 +15,64 @@ define(['N/query', 'N/record'],
                     aggregateItemLocation.quantityOnHand,
                     aggregateItemLocation.location as location,
                     item.description,
+                    item.unitstype as uom_parent,
                     unitsTypeUom.unitsType as uom,
-                    unitsTypeUom.unitname as uom_name,
-
                 FROM item
-                JOIN aggregateItemLocation
+                LEFT JOIN aggregateItemLocation
                     ON item.id = aggregateItemLocation.item
                     AND aggregateItemLocation.location = ${options.location}
-                JOIN unitsTypeUom 
+                LEFT JOIN unitsTypeUom 
                     ON item.stockUnit = unitsTypeUom.unitsType
                 WHERE item.custitem_tc_barcode_ean_13 = '${options.barcode}'`
-            const arrResult = query.runSuiteQL({ query: strQuery }).asMappedResults()
-            log.debug('arrResult', arrResult)
-            arrResult[0].oldquantityonhand = arrResult[0].quantityonhand
-            return { data: { item: arrResult[0] } }
+            log.debug('strQuery', strQuery)
+
+            const objItemResult = query.runSuiteQL({ query: strQuery }).asMappedResults()[0]
+            log.debug('objItemResult', objItemResult)
+
+            const strItemPerLocationQuery = `SELECT
+                    item.id,
+                    COALESCE(location_balance.quantityOnHand, 0) as quantityonhand,
+                    location_balance.location,
+                    BUILTIN.DF(location.id) as name,
+                FROM item
+                LEFT JOIN aggregateItemLocation as location_balance
+                    ON item.id = location_balance.item
+                    AND location_balance.quantityonhand > 0
+                LEFT JOIN location
+                    ON location.id = location_balance.location
+                JOIN LocationSubsidiaryMap
+                    ON location_balance.location = LocationSubsidiaryMap.location
+                    AND LocationSubsidiaryMap.subsidiary = ${options.subsidiary}
+                WHERE 
+                    item.id = ${objItemResult.id}`
+            const arrItemPerLocation = query.runSuiteQL({ query: strItemPerLocationQuery }).asMappedResults()
+
+            const strSubsidiariesLocationQuery = `SELECT
+                location.id as location,
+                BUILTIN.DF(location.id) as name
+                FROM location 
+                JOIN LocationSubsidiaryMap
+                    ON LocationSubsidiaryMap.location = location.id
+                        AND LocationSubsidiaryMap.subsidiary = 2
+                AND location.isinactive = 'F'`
+            const arrSubsidiariesLocationResult = query.runSuiteQL({ query: strSubsidiariesLocationQuery }).asMappedResults()
+
+            const objMainMap = {}
+            for (const m of arrItemPerLocation) {
+                objMainMap[m.location] = m
+            }
+
+            const combined = arrSubsidiariesLocationResult.map(s => ({
+                id: objMainMap[s.location]?.id ?? null,
+                location: s.location,
+                name: s.name,
+                quantityonhand: objMainMap[s.location]?.quantityonhand ?? 0
+            }))
+            objItemResult.oldquantityonhand = objItemResult.quantityonhand
+            objItemResult.itemPerLocation = combined
+            return { data: { item: objItemResult } }
         }
+
         PUBLIC.confirmRecount = (options) => {
             const objInventoryAdjustmentRec = record.create({
                 type: record.Type.INVENTORY_ADJUSTMENT,
@@ -46,7 +89,8 @@ define(['N/query', 'N/record'],
                 const intQuantity = element.quantityonhand - element.oldquantityonhand
                 objInventoryAdjustmentRec.selectLine({ sublistId: 'inventory', line: line })
                 objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'item', value: element.id })
-                objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'location', value: options.location })
+                objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'location', value: element.location })
+                objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'units', value: element.uom })
                 objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'adjustqtyby', value: intQuantity })
                 objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'custcol_tc_ims_reason_to_adjust', value: element.reason })
                 objInventoryAdjustmentRec.setCurrentSublistValue({ sublistId: 'inventory', fieldId: 'memo', value: element.memo })
@@ -97,10 +141,6 @@ define(['N/query', 'N/record'],
             log.debug('grouped', grouped)
             const arrPoIds = []
             return { data: { item: options.items }, inventoryAdjustmentId: intId, purchaseOrderIds: arrPoIds }
-        }
-
-
-        PUBLIC.createPurchaseOrder = (options) => {
         }
 
         return PUBLIC
