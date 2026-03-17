@@ -324,11 +324,9 @@ const FormOutbound = (props) => {
                           <TableRow>
                             <TableCell>Item Name</TableCell>
                             {!row.toLocation && <TableCell>Location</TableCell>}
-                            <TableCell>Qty Ordered</TableCell>
-                            {/* <TableCell>Qty Picked</TableCell> */}
-                            {/* <TableCell>Qty Packed</TableCell> */}
-                            {/* <TableCell>Qty Shipped</TableCell> */}
-                            <TableCell>Qty to Fulfill</TableCell>
+                            <TableCell>Quantity Ordered</TableCell>
+                            <TableCell>Quantity Remaining</TableCell>
+                            <TableCell>Quantity to Fulfill</TableCell>
                             <TableCell>UOM</TableCell>
                           </TableRow>
                           {row.items.map(item => (
@@ -354,9 +352,7 @@ const FormOutbound = (props) => {
                                 </TableCell>
                               }
                               <TableCell>{item.quantityinitialized || 0}</TableCell>
-                              {/* <TableCell>{item.quantitypicked || 0}</TableCell> */}
-                              {/* <TableCell>{item.quantitypacked || 0}</TableCell> */}
-                              {/* <TableCell>{item.quantityshiprecv || 0}</TableCell> */}
+                              <TableCell>{item.max_quantity || 0}</TableCell>
 
                               <TableCell>
                                 <TextField

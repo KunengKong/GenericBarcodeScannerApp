@@ -201,7 +201,7 @@ export default (props) => {
                                 <TableCell>Item Name</TableCell>
                                 <TableCell>Location</TableCell>
                                 <TableCell>Quantity Ordered</TableCell>
-                                <TableCell>Quantity Received</TableCell>
+                                <TableCell>Quantity Remaining</TableCell>
                                 <TableCell>Quantity to Recieve</TableCell>
                                 <TableCell>UOM</TableCell>
                               </TableRow>
@@ -228,7 +228,7 @@ export default (props) => {
                                       </Select>
                                     </TableCell>
                                     <TableCell>{item.quantityinitialized}</TableCell>
-                                    <TableCell>{item.quantityreceived}</TableCell>
+                                    <TableCell>{item.max_quantity}</TableCell>
                                     <TableCell>
                                       <TextField
                                         value={item.quantity}

@@ -43,6 +43,9 @@ export default (props) => {
       for (const [key, _] of objItemLookupResult.items.entries()) {
         objItemLookupResult.items[key].uniqueKey = Math.floor(Math.random() * 1000)
         // objItemLookupResult.items[key].location = mainAppState.location
+        if (!objItemLookupResult.items[key].location)
+          objItemLookupResult.items[key].location = mainAppState.location
+
       }
       setReturnState(prev => ({
         ...prev,
