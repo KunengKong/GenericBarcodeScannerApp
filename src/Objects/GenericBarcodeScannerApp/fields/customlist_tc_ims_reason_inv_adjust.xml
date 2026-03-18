@@ -1,0 +1,54 @@
+<customlist scriptid="customlist_tc_ims_reason_inv_adjust">
+  <description></description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>Reason for Inv Adjustment</name>
+  <customvalues>
+    <customvalue scriptid="val_140322_t2525361_257">
+      <abbreviation>D</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Damaged</value>
+    </customvalue>
+    <customvalue scriptid="val_140323_t2525361_377">
+      <abbreviation>E</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Expired</value>
+    </customvalue>
+    <customvalue scriptid="val_140324_t2525361_520">
+      <abbreviation>L</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Lost</value>
+    </customvalue>
+    <customvalue scriptid="val_140325_t2525361_103">
+      <abbreviation>T</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Theft</value>
+    </customvalue>
+    <customvalue scriptid="val_140326_t2525361_528">
+      <abbreviation>S</abbreviation>
+      <isinactive>F</isinactive>
+      <value>System Error</value>
+    </customvalue>
+    <customvalue scriptid="val_140327_t2525361_167">
+      <abbreviation>S</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Supplier Issue</value>
+    </customvalue>
+    <customvalue scriptid="val_140328_t2525361_153">
+      <abbreviation>C</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Customer Return</value>
+    </customvalue>
+    <customvalue scriptid="val_140329_t2525361_529">
+      <abbreviation>P</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Production Variance</value>
+    </customvalue>
+    <customvalue scriptid="val_140330_t2525361_599">
+      <abbreviation>O</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Other</value>
+    </customvalue>
+  </customvalues>
+</customlist>
