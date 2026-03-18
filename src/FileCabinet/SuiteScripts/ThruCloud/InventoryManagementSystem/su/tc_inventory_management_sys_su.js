@@ -36,10 +36,10 @@ define([
             if (scriptContext.request.method == 'GET') {
                 try {
                     const objFile = file.load({ id: '../build/index.html' })
-                    const jsFile = file.load({ id: 'SuiteScripts/ThruCloud/GenericBarcodeScannerApp/build/static/js/main.js' })
-                    const cssFile = file.load({ id: 'SuiteScripts/ThruCloud/GenericBarcodeScannerApp/build/static/css/main.css' })
-                    const faviconFile = file.load({ id: 'SuiteScripts/ThruCloud/GenericBarcodeScannerApp/build/favicon.ico' })
-                    const introImageFile = file.load({ id: 'SuiteScripts/ThruCloud/GenericBarcodeScannerApp/build/ims-app.png' })
+                    const jsFile = file.load({ id: 'SuiteScripts/ThruCloud/InventoryManagementSystem/build/static/js/main.js' })
+                    const cssFile = file.load({ id: 'SuiteScripts/ThruCloud/InventoryManagementSystem/build/static/css/main.css' })
+                    const faviconFile = file.load({ id: 'SuiteScripts/ThruCloud/InventoryManagementSystem/build/favicon.ico' })
+                    const introImageFile = file.load({ id: 'SuiteScripts/ThruCloud/InventoryManagementSystem/build/ims-app.png' })
                     log.debug('introImageFile.url', introImageFile.url)
                     let strHtmlContent = objFile.getContents()
                     strHtmlContent = strHtmlContent.replace('./static/js/main.js', jsFile.url)

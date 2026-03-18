@@ -68,3 +68,14 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+# Getting started with TC | IMS
+
+1. it deploy GenericBarcodeScannerApp to Account
+2. change REACT_APP_NETSUITE_URL under .env file to the external URL script record from netsuite
+
+
+## Run via NGROK
+1. open cmd 
+2. use ngrok http 3000
