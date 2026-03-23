@@ -30,7 +30,8 @@ export default (props) => {
           data: {
             barcode: outboundState.barcode,
             fromLocation: outboundState.fromLocation,
-            step: outboundState.step
+            step: outboundState.step,
+            subsidiary: mainAppState.subsidiary
           }
         })
       }).done(async (res) => {
@@ -341,8 +342,9 @@ const FormOutbound = (props) => {
                                       rowId: row.id,
                                       itemId: item.uniqueKey,
                                     })}
-                                    label="Loc1ation"
-                                  >
+                                    defaultValue={0}
+                                    label="Location"
+                                  ><MenuItem value={0} selected>--Select--</MenuItem>
                                     {
                                       item.itemPerLocation.map((o, key) => {
                                         return <MenuItem value={o.location} key={key}>{o.name || o.name}</MenuItem>

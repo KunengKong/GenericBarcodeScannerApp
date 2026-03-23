@@ -21,16 +21,20 @@ import ReturnAuthorization from '../Component/InventoryManagement/ReturnAuthoriz
 const HomeMenuList = {
   Home: [
     { label: 'Home', href: '/', element: <HomePage />, icon: <HomeIcon /> }
-  ],
-  InventoryManagement: [
+  ]
+}
+if (process.env.REACT_APP_ENABLE_INVENTORY_MANAGEMENT_SYSTEM == 'true') {
+  HomeMenuList.InventoryManagement = [
     { alias: 'Inventory Recount', label: 'Recount', href: '/item/recount/scan', element: <Recount />, icon: <InventoryIcon /> },
     { alias: 'Inbound Inventory', label: 'In', href: '/item/inbound/scan', element: <Inbound />, icon: <ArchiveIcon /> },
     { alias: 'Outbound Inventory', label: 'Out', href: '/item/outbound/scan', element: <Outbound />, icon: <UnarchiveIcon /> },
     { alias: 'Return Item', label: 'Return Item', href: '/item/return/scan', element: <ReturnAuthorization />, icon: <AssignmentReturnIcon /> },
-  ],
-  // FixAssets: [
-  //   { label: 'Fix Assets', href: '/fixasset/scan', element: <FixAssets />, icon: <DevicesIcon /> },
-  // ],
+  ]
+}
+if (process.env.REACT_APP_ENABLE_FIXED_ASSET == 'true') {
+  HomeMenuList.FixAssets = [
+    { alias: 'Fix Assets', label: 'Fix Assets', href: '/fixasset/scan', element: <FixAssets />, icon: <DevicesIcon /> },
+  ]
 }
 
 const HomeMenuListEntries = Object.entries(HomeMenuList)

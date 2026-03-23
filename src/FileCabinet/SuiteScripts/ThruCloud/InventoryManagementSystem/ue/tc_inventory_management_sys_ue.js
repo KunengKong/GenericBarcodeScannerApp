@@ -16,22 +16,28 @@ define(['N/query', 'N/ui/serverWidget'],
          * @param {ServletRequest} scriptContext.request - HTTP request information sent from the browser for a client action only.
          * @since 2015.2
          */
-        var strFieldId = '_tc_barcode_ean_13'
+        const objField = {
+            item: { id: 'custitem_tc_ims_barcode', value: '', recordType: 'item' },
+            transaction: { id: 'custbody_tc_ims_barcode', value: '', recordType: 'transaction' },
+            fixedAsset: { id: 'custrecord_tc_ims_barcode_fam', value: '', recordType: 'customrecord_ncfar_asset' },
+            // location: { id: 'custrecord_tc_ims_barcode_loc', value: '' },
+        }
         const beforeLoad = (scriptContext) => {
             try {
                 if (scriptContext.type !== scriptContext.UserEventType.VIEW) return
                 var form = scriptContext.form
                 var curRec = scriptContext.newRecord
-                log.debug('beforeLoad type', curRec.type)
-                var barcodeValue = curRec.getValue({ fieldId: 'custitem' + strFieldId }) || curRec.getValue({ fieldId: 'custbody' + strFieldId })
-
+                var barcodeValue
+                for (const key in objField) {
+                    if (barcodeValue) break
+                    barcodeValue = curRec.getValue({ fieldId: objField[key].id })
+                }
                 if (!barcodeValue) return
                 var inlineHtmlField = form.addField({
                     id: 'custpage_barcode_html',
                     type: serverWidget.FieldType.INLINEHTML,
                     label: 'Barcode'
                 })
-
                 inlineHtmlField.defaultValue =
                     "<div style='margin-top:10px;'>" +
                     "<img alt='Barcode Generator TEC-IT' " +
@@ -54,18 +60,21 @@ define(['N/query', 'N/ui/serverWidget'],
          */
         const beforeSubmit = (scriptContext) => {
             try {
+                let objTargetRecord = {
+                    recordType: '',
+                    fieldId: ''
+                }
                 const curRec = scriptContext.newRecord
-                const intBarcode = curRec.getValue('custitem' + strFieldId) || curRec.getValue('custbody' + strFieldId)
+                for (const key in objField) {
+                    if (curRec.getField({ fieldId: objField[key].id })) {
+                        objTargetRecord.fieldId = objField[key].id
+                        objTargetRecord.recordType = objField[key].recordType
+                        break
+                    }
+                }
+                const intBarcode = curRec.getValue({ fieldId: objTargetRecord.fieldId })
                 if (intBarcode) return true
-                const isItemRecord = curRec.type.includes('item')
-
-                let strQuery
-                if (isItemRecord)
-                    strQuery = `SELECT custitem_tc_barcode_ean_13 FROM item`
-                else
-                    strQuery = `SELECT custbody_tc_barcode_ean_13 FROM transaction`
-
-                log.debug('strQuery', strQuery)
+                let strQuery = `SELECT ${objTargetRecord.fieldId} as barcode FROM ${objTargetRecord.recordType}`
                 const arrBarcodes = []
                 const arrResult = query.runSuiteQL({ query: strQuery }).asMappedResults()
                 for (let element of arrResult) {
@@ -74,8 +83,7 @@ define(['N/query', 'N/ui/serverWidget'],
                 }
                 const newBarcode = generateUniqueEAN13(arrBarcodes)
 
-                curRec.setValue('custitem' + strFieldId, newBarcode)
-                curRec.setValue('custbody' + strFieldId, newBarcode)
+                curRec.setValue(objTargetRecord.fieldId, newBarcode)
 
             } catch (e) {
                 log.error('error', e)

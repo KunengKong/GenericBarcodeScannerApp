@@ -49,5 +49,41 @@ define(['N/query'],
                 invAdjReason: arrInvAdjReasonResult
             }
         }
+        PUBLIC.getUser = (options) => {
+            log.debug('getUser', options)
+            const objOutput = {}
+            const strQuery = `SELECT
+                    employee.id,
+                    employee.subsidiary
+                FROM employee
+                WHERE employee.id = ${options.currentUserId}`
+            log.debug('strQuery', strQuery)
+            const objUser = query.runSuiteQL({ query: strQuery }).asMappedResults()[0]
+            objOutput.currentUser = objUser
+            return objOutput
+        }
+
+
+        PUBLIC.getInventoryDetail = (options) => {
+
+            log.debug('getInventoryDetail', options)
+
+            const objOutput = {}
+            const strQuery = `SELECT 
+                inventoryNumber.id,
+                inventoryNumber.inventorynumber as lotnumber,
+                inventorynumber.expirationdate as expirationDate,
+                InventoryNumberLocation.quantityavailable as max_quantity, 
+                FROM inventoryNumber
+                JOIN InventoryNumberLocation
+                    ON inventoryNumber.id = InventoryNumberLocation.inventorynumber
+                WHERE
+                    inventoryNumber.item = ${options.item}
+                AND InventoryNumberLocation.location = ${options.location}`
+            log.debug('strQuery', strQuery)
+            const arrInventoryDetails = query.runSuiteQL({ query: strQuery }).asMappedResults()
+            objOutput.inventoryDetails = arrInventoryDetails
+            return objOutput
+        }
         return PUBLIC
     })

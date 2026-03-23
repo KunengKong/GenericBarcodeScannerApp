@@ -13,16 +13,33 @@ import {
   Typography
 } from '@mui/material'
 import { Menu as MenuIcon } from '@mui/icons-material'
+import $ from "jquery"
 
 export default function App() {
 
   const [mainAppState, setMainAppState] = useState({ title: '', subsidiary: 2, location: 100 })
 
   useEffect(() => {
-    // Code to run when the URL (location) changes
-    console.log('The URL has changed to:', mainAppState.title)
-    // You can perform actions here, like logging a page view for analytics
-  }, [mainAppState.title])
+    $.post(process.env.REACT_APP_NETSUITE_URL, {
+      data: JSON.stringify({
+        action: 'getUser',
+        page: 'general',
+        data: {
+          currentUserId: 9 // Cornello Engreso | https://12255891.app.netsuite.com/app/common/entity/employee.nl?id=9
+        }
+      })
+    }).done((res) => {
+      const objUser = JSON.parse(res)
+      console.log('objUser', objUser)
+      setMainAppState((prev) => {
+        return {
+          ...prev,
+          subsidiary: objUser.currentUser.subsidiary,
+          location: objUser.currentUser.location
+        }
+      })
+    })
+  }, [mainAppState.subsidiary])
   const [open, setOpen] = useState(false)
   const toggleDrawer = (newOpen) => () => {
     setOpen(newOpen)

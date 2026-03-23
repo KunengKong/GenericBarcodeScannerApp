@@ -1,14 +1,14 @@
 /**
  * @NApiVersion 2.1
  */
-define(['N/query', 'N/record'],
-    (query, record) => {
+define(['N/query', 'N/record', './lib/lib_inventory_detail.js'],
+    (query, record, libInventoryDetail) => {
 
         const PUBLIC = {
 
         }
         PUBLIC.search = (options) => {
-
+            log.debug('search', options)
             const strQuery = `SELECT
                     item.id,
                     item.itemid,
@@ -17,13 +17,15 @@ define(['N/query', 'N/record'],
                     item.description,
                     item.unitstype as uom_parent,
                     unitsTypeUom.unitsType as uom,
+                    item.islotitem,
+                    item.isserialitem,
                 FROM item
                 LEFT JOIN aggregateItemLocation
                     ON item.id = aggregateItemLocation.item
                     AND aggregateItemLocation.location = ${options.location}
                 LEFT JOIN unitsTypeUom 
                     ON item.stockUnit = unitsTypeUom.unitsType
-                WHERE item.custitem_tc_barcode_ean_13 = '${options.barcode}'`
+                WHERE item.custitem_tc_ims_barcode = '${options.barcode}'`
             log.debug('strQuery', strQuery)
 
             const objItemResult = query.runSuiteQL({ query: strQuery }).asMappedResults()[0]
@@ -53,7 +55,7 @@ define(['N/query', 'N/record'],
                 FROM location 
                 JOIN LocationSubsidiaryMap
                     ON LocationSubsidiaryMap.location = location.id
-                        AND LocationSubsidiaryMap.subsidiary = 2
+                        AND LocationSubsidiaryMap.subsidiary = ${options.subsidiary}
                 AND location.isinactive = 'F'`
             const arrSubsidiariesLocationResult = query.runSuiteQL({ query: strSubsidiariesLocationQuery }).asMappedResults()
 
@@ -74,13 +76,57 @@ define(['N/query', 'N/record'],
         }
 
         PUBLIC.confirmRecount = (options) => {
+
+
+            //     options = {
+            //         items: [
+            //             {
+            //                 id: 120,
+            //                 itemid: "WM00002",
+            //                 quantityonhand: "6",
+            //                 location: 25,
+            //                 description: "LE MINERALE 600ML",
+            //                 uom_parent: 2,
+            //                 uom: 2,
+            //                 islotitem: "T",
+            //                 isserialitem: "F",
+            //                 oldquantityonhand: 5,
+            //                 itemPerLocation: [
+            //                     {
+            //                         id: 120,
+            //                         location: 25,
+            //                         name: "AMC",
+            //                         quantityonhand: 5
+            //                     }
+            //                 ],
+            //                 reason: 1,
+            //                 inventoryDetail: [
+            //                     {
+            //                         lotnumber: "5139375164163",
+            //                         expirationDate: "2026-03-19",
+            //                         quantity: "3"
+            //                     },
+            //                     {
+            //                         lotnumber: "2",
+            //                         expirationDate: "2026-03-25",
+            //                         quantity: "3"
+            //                     }
+            //                 ],
+            //                 uniqueKey: 1773925386573
+            //             }
+            //         ],
+            //         location: 100,
+            //         subsidiary: 11,
+            //         account: 130
+            //     }
+            // }
             const objInventoryAdjustmentRec = record.create({
                 type: record.Type.INVENTORY_ADJUSTMENT,
                 isDynamic: true
             })
             const arrItems = []
-            objInventoryAdjustmentRec.setValue('subsidiary', 2)
-            objInventoryAdjustmentRec.setValue('account', 10)
+            objInventoryAdjustmentRec.setValue('subsidiary', options.subsidiary)
+            objInventoryAdjustmentRec.setValue('account', options.account)
             let line = 0
             let hasChanges = false
             for (const element of options.items) {
@@ -97,10 +143,7 @@ define(['N/query', 'N/record'],
 
                 // ===== INVENTORY DETAIL =====
                 const invDetail = objInventoryAdjustmentRec.getCurrentSublistSubrecord({ sublistId: 'inventory', fieldId: 'inventorydetail', line: line })
-                invDetail.selectLine({ sublistId: 'inventoryassignment', line: 0 })
-                invDetail.setCurrentSublistValue({ sublistId: 'inventoryassignment', fieldId: 'inventorystatus', value: 1, line: 0 })
-                invDetail.setCurrentSublistValue({ sublistId: 'inventoryassignment', fieldId: 'quantity', value: intQuantity, line: 0 })
-                invDetail.commitLine({ sublistId: 'inventoryassignment', line: 0 })
+                libInventoryDetail.setInventoryDetail({ inventoryDetails: element.inventoryDetail, subRecord: invDetail, isPositiveInvDetail: intQuantity > 0 })
 
                 objInventoryAdjustmentRec.commitLine({ sublistId: 'inventory', line: line })
                 line++

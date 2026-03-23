@@ -1,28 +1,34 @@
 import Scanner from '../Scanner/Scan'
+import React, { useState, useEffect } from 'react'
 import { Box, Typography, Grid, Button } from '@mui/material'
 import $ from "jquery";
 export const FixAssets = () => {
-  const callNetSuite = async () => {
-    try {
-      const response = await $.post(
-        process.env.REACT_APP_NETSUITE_URL, {
-        data: JSON.stringify({
-          barcode: "123456789"
-        })
-      }).done(function (res) {
-        console.log("Success:", res);
+  const [fixAssetState, setFixAssetState] = useState({
+    page: 'fixasset',
+    items: [],
+    barcode: null,
+    step: 'scan'
+  })
+  const processBarcode = async () => {
+    await $.post(process.env.REACT_APP_NETSUITE_URL, {
+      data: JSON.stringify({
+        action: 'fixAssetLookUp',
+        page: fixAssetState.page,
+        data: {
+          barcode: fixAssetState.barcode
+        }
       })
-    } catch (error) {
-      console.error(error)
-    }
+    })
   }
+  useEffect(() => {
+    if (fixAssetState.barcode) {
+      processBarcode()
+    }
+    console.log('fixAssetState', fixAssetState)
+  }, [fixAssetState.barcode])
   return (
     <>
-      <Scanner page='FixAssets' />
-      <Button
-        onClick={callNetSuite}>
-        Call NetSuite
-      </Button>
+      <Scanner page='FixAssets' state={fixAssetState} setState={setFixAssetState} />
     </>
   )
 }

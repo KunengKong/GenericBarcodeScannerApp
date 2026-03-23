@@ -26,7 +26,7 @@ define(['N/query', 'N/record'],
                 JOIN transactionline
                     ON transaction.id = transactionline.transaction
                 WHERE transaction.type = '${options.returnFrom == 'customer' ? 'RtnAuth' : 'VendAuth'}'
-                AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'
+                AND transaction.custbody_tc_ims_barcode  = '${options.barcode}'
                 AND transactionline.mainline = 'F'
                 AND transactionline.item > 0`
             const arrSOResult = query.runSuiteQL({ query: strItemReceiptQuery }).asMappedResults()
@@ -56,10 +56,10 @@ define(['N/query', 'N/record'],
                 const strQuery = `SELECT
                         item.id,
                         item.itemid,
-                        item.custitem_tc_barcode_ean_13 as barcode,
+                        item.custitem_tc_ims_barcode as barcode,
                     FROM item
                     WHERE
-                        item.custitem_tc_barcode_ean_13 = '${options.barcode}'`
+                        item.custitem_tc_ims_barcode = '${options.barcode}'`
                 const arrItemResult = query.runSuiteQL({ query: strQuery }).asMappedResults()
                 log.debug('arrItemResult', arrItemResult)
                 objOutput.quantity = 0

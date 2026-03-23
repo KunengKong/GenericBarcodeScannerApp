@@ -15,7 +15,7 @@ define(['N/query', 'N/record'],
             const strItemReceiptQuery = `SELECT
                     transaction.id,
                     BUILTIN.DF(transaction.id) as transaction_name,
-                    transaction.custbody_tc_barcode_ean_13 as barcode,
+                    transaction.custbody_tc_ims_barcode as barcode,
                     transactionline.item as itemid,
                     BUILTIN.DF(transactionline.item) as itemname,
                     BUILTIN.DF(transactionline.units) as uomname,
@@ -30,7 +30,7 @@ define(['N/query', 'N/record'],
                 JOIN transactionline
                     ON transaction.id = transactionline.transaction
                 WHERE transaction.type = '${options.step == 'inFromSupplier' ? 'PurchOrd' : 'TrnfrOrd'}'
-                AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'
+                AND transaction.custbody_tc_ims_barcode  = '${options.barcode}'
                 AND transactionline.mainline = 'F'
                 AND transactionline.quantity > 0`
             const arrItemReceiptResult = query.runSuiteQL({ query: strItemReceiptQuery }).asMappedResults()
@@ -62,10 +62,10 @@ define(['N/query', 'N/record'],
                 const strQuery = `SELECT
                     item.id,
                         item.itemid,
-                        item.custitem_tc_barcode_ean_13 as barcode,
+                        item.custitem_tc_ims_barcode as barcode,
                     FROM item
                     WHERE
-                        item.custitem_tc_barcode_ean_13 = '${options.barcode}'`
+                        item.custitem_tc_ims_barcode = '${options.barcode}'`
                 const arrItemResult = query.runSuiteQL({ query: strQuery }).asMappedResults()
                 log.debug('arrItemResult', arrItemResult)
                 objOutput.item = arrItemResult[0]
@@ -88,7 +88,7 @@ define(['N/query', 'N/record'],
                 FROM 
                     transaction
                 WHERE 
-                    transaction.custbody_tc_barcode_ean_13 = '${options.barcode}'
+                    transaction.custbody_tc_ims_barcode = '${options.barcode}'
                 AND transaction.type = '${options.step == 'inFromSupplier' ? 'PurchOrd' : 'TrnfrOrd'}'`
                 const objPurchaseOrderResult = query.runSuiteQL({ query: strQuery }).asMappedResults()[0]
                 log.debug('objPurchaseOrderResult', objPurchaseOrderResult)
@@ -130,7 +130,7 @@ define(['N/query', 'N/record'],
 
                     objItemReceiptRec.commitLine({ sublistId: 'item', line: intLinePOItem })
                 }
-                objItemReceiptRec.setValue('custbody_tc_barcode_ean_13', options.barcode)
+                objItemReceiptRec.setValue('custbody_tc_ims_barcode', options.barcode)
                 objOutput.data.itemReceiptId = objItemReceiptRec.save()
                 objOutput.barcode = options.barcode
                 log.debug('objOutput', objOutput)
