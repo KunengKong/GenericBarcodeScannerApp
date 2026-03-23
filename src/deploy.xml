@@ -1,8 +1,8 @@
 <deploy>
     <files>
-        <path>~/FileCabinet/SuiteScripts/ThruCloud/GenericBarcodeScannerApp/*</path>
+        <path>~/FileCabinet/SuiteScripts/ThruCloud/InventoryManagementSystem/*</path>
     </files>
-    <!-- <objects>
-        <path>~/Objects/GenericBarcodeScannerApp/*</path>
-    </objects> -->
+    <objects>
+        <path>~/Objects/InventoryManagementSystem/*</path>
+    </objects>
 </deploy>
