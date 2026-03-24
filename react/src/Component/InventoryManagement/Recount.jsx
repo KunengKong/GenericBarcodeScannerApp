@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { Box, Typography, Grid, Button, TextField } from '@mui/material'
 import Scanner from '../Scanner/Scan'
 import InventoryForm from './InventoryForm'
+import InventoryDetailForm from './InventoryDetailForm'
 
 export default (props) => {
   const { mainAppState } = props
@@ -14,8 +15,10 @@ export default (props) => {
     step: 'scan'
   })
 
+  // TODO: to be removed
+  // return (<InventoryDetailForm />)
   if (recountState.barcode == null && recountState.step == 'scan') {
-    return (<Scanner state={recountState} setState={setRecountState}/>)
+    return (<Scanner state={recountState} setState={setRecountState} />)
   } else if (recountState.step == 'recountItemForm') {
     return (
       <InventoryForm

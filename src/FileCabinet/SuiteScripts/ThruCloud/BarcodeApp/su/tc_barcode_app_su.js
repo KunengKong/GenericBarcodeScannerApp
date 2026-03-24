@@ -5,11 +5,13 @@
 define([
     'N/ui/serverWidget',
     'N/file',
-    './data/lib_inv_recount.js',
-    './data/lib_inv_inbound.js',
-    './data/lib_inv_outbound.js',
-    './data/lib_inv_return.js',
-    './data/lib_general.js',
+    '../InventoryManagementSystem/data/lib_inv_recount.js',
+    '../InventoryManagementSystem/data/lib_inv_inbound.js',
+    '../InventoryManagementSystem/data/lib_inv_outbound.js',
+    '../InventoryManagementSystem/data/lib_inv_return.js',
+    '../InventoryManagementSystem/data/lib_general.js',
+
+    '../FixAssets/data/lib_fixasset_get_data.js'
 ],
     /**
  * @param{serverWidget} serverWidget
@@ -21,7 +23,9 @@ define([
         libInbound,
         libOutbound,
         libReturn,
-        libGeneral) => {
+        libGeneral,
+
+        libFixAsset) => {
         /**
          * Defines the Suitelet script trigger point.
          * @param {Object} scriptContext
@@ -31,7 +35,7 @@ define([
          */
         const onRequest = (scriptContext) => {
             scriptContext.response.setHeader({ name: 'Access-Control-Allow-Origin', value: '*' })
-            scriptContext.response.setHeader({ name: 'Access-Control-Allow-Methods', value: 'GET, POST, OPTIONS' })
+            scriptContext.response.setHeader({ name: 'Access-Control-Allow-Methods', value: 'GET, POST' })
             scriptContext.response.setHeader({ name: 'Access-Control-Allow-Headers', value: 'Content-Type' })
             if (scriptContext.request.method == 'GET') {
                 try {
@@ -66,6 +70,8 @@ define([
                         output = libGeneral[body.action](body?.data)
                     else if (body.page == 'return')
                         output = libReturn[body.action](body?.data)
+                    else if (body.page == 'fixasset')
+                        output = libFixAsset[body.action](body?.data)
 
                     else
                         output = { page: 'error', message: 'page not found' }

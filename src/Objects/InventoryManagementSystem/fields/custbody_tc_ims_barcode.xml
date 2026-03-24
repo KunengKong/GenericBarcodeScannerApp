@@ -1,6 +1,6 @@
-<transactionbodycustomfield scriptid="custbody_tc_barcode_ean_13">
+<transactionbodycustomfield scriptid="custbody_tc_ims_barcode">
   <accesslevel>2</accesslevel>
-  <aidescription></aidescription>
+  
   <applyformatting>F</applyformatting>
   <bodyassemblybuild>F</bodyassemblybuild>
   <bodybom>F</bodybom>
@@ -56,7 +56,7 @@
   <searchlevel>2</searchlevel>
   <selectrecordtype></selectrecordtype>
   <showhierarchy>F</showhierarchy>
-  <showinlist>F</showinlist>
+  <showinlist>T</showinlist>
   <sourcefilterby></sourcefilterby>
   <sourcefrom></sourcefrom>
   <sourcelist></sourcelist>

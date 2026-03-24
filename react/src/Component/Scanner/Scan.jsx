@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { Box, Typography, Grid, Button, TextField, prerelease } from '@mui/material'
 import $ from "jquery"
 import Outbound from '../InventoryManagement/Outbound'
+import { FixAssets } from '../FixAssets/FixAssets'
 
 
 export default (props) => {
   const { state, setState } = props
   const [scanForm, setScanForm] = useState({ barcode: '' })
-  console.log('state', state)
   const objTransaction = {
     recount: {
       scan: 'Item'
@@ -23,7 +23,10 @@ export default (props) => {
       ship: 'Shipping Ticket',
     },
     return: {
-
+      scan: 'Return Authorization'
+    },
+    fixasset: {
+      scan: 'Fix Asset'
     }
   }
   useEffect(() => {
@@ -35,9 +38,7 @@ export default (props) => {
       if (now - lastTime > 100000)
         buffer = ''
       lastTime = now
-      console.log('buffer', buffer)
       if (e.key === 'Enter') {
-        console.log('buffer | e.key.length', e.key.length)
         setState(prev => {
           if (prev.page == 'recount' && prev.step == 'scan')
             return { barcode: buffer, test: buffer, ...prev, step: 'recountItemForm' }
@@ -45,10 +46,9 @@ export default (props) => {
             return { barcode: buffer, test: buffer, ...prev }
         })
         buffer = ''
-      } else if (e.key.length === 1) {
+      } else if (e?.key?.length === 1) {
         // setScanForm(prev => ({ ...prev, barcode: prev.barcode + e.key }))
         buffer += e.key
-        console.log('buffer | e.key', buffer)
       }
     }
     window.addEventListener('keydown', handler)

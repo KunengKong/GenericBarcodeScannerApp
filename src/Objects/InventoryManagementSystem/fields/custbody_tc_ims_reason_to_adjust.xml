@@ -1,6 +1,6 @@
 <transactionbodycustomfield scriptid="custbody_tc_ims_reason_to_adjust">
   <accesslevel>2</accesslevel>
-  <aidescription></aidescription>
+  
   <applyformatting>F</applyformatting>
   <bodyassemblybuild>F</bodyassemblybuild>
   <bodybom>F</bodybom>

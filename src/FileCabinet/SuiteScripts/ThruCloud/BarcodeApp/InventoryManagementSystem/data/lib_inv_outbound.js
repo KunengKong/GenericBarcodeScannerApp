@@ -16,7 +16,7 @@ define(['N/query', 'N/record'],
             const strItemReceiptQuery = `SELECT
                     transaction.id,
                     BUILTIN.DF(transaction.id) as transaction_name,
-                    transaction.custbody_tc_barcode_ean_13 as barcode,
+                    transaction.custbody_tc_ims_barcode as barcode,
                     transactionline.item as itemid,
                     BUILTIN.DF(transactionline.item) as itemname,
                     0 as quantity,
@@ -35,7 +35,7 @@ define(['N/query', 'N/record'],
                     ON transaction.id = transactionline.transaction
                 WHERE 
                     transaction.type = '${objOutput.isCustomer ? 'SalesOrd' : 'TrnfrOrd'}'
-                    AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'
+                    AND transaction.custbody_tc_ims_barcode  = '${options.barcode}'
                     AND transactionline.mainline = 'F'
                     AND transactionline.item > 0
                 ${objOutput.isCustomer ? '' : "AND transactionline.hasfulfillableitems = 'T'"}`
@@ -51,7 +51,7 @@ define(['N/query', 'N/record'],
                 FROM location 
                 JOIN LocationSubsidiaryMap
                     ON LocationSubsidiaryMap.location = location.id
-                        AND LocationSubsidiaryMap.subsidiary = ${arrItemReceiptResult[0].subsidiary}
+                        AND LocationSubsidiaryMap.subsidiary = ${options.subsidiary}
                         AND location.isinactive = 'F'`
             const arrSubsidiariesLocationResult = query.runSuiteQL({ query: strSubsidiariesLocationQuery }).asMappedResults()
 
@@ -70,10 +70,10 @@ define(['N/query', 'N/record'],
                 const strQuery = `SELECT
                         item.id,
                         item.itemid,
-                        item.custitem_tc_barcode_ean_13 as barcode,
+                        item.custitem_tc_ims_barcode as barcode,
                     FROM item
                     WHERE
-                        item.custitem_tc_barcode_ean_13 = '${options.barcode}'`
+                        item.custitem_tc_ims_barcode = '${options.barcode}'`
                 const arrItemResult = query.runSuiteQL({ query: strQuery }).asMappedResults()
                 log.debug('arrItemResult', arrItemResult)
                 objOutput.item = arrItemResult[0]
@@ -88,11 +88,11 @@ define(['N/query', 'N/record'],
             try {
                 const strSOQuery = `SELECT
                         transaction.id,
-                        transaction.custbody_tc_barcode_ean_13 as barcode
+                        transaction.custbody_tc_ims_barcode as barcode
                     FROM transaction
                     WHERE
                             transaction.type = '${options.type == 'customer' ? 'SalesOrd' : 'TrnfrOrd'}'
-                        AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'`
+                        AND transaction.custbody_tc_ims_barcode  = '${options.barcode}'`
                 const objSOResult = query.runSuiteQL({ query: strSOQuery }).asMappedResults()[0]
                 log.debug('objSOResult', objSOResult)
 
@@ -112,7 +112,7 @@ define(['N/query', 'N/record'],
                         toType: record.Type.ITEM_FULFILLMENT,
                         isDynamic: true,
                     })
-                    objItemFullfilmentRec.setValue('custbody_tc_barcode_ean_13', null)
+                    objItemFullfilmentRec.setValue('custbody_tc_ims_barcode', null)
                     const intIFLineCount = objItemFullfilmentRec.getLineCount({ sublistId: 'item' })
                     log.debug('intIFLineCount', intIFLineCount)
                     for (let index = 0; index < intIFLineCount; index++) {
@@ -161,10 +161,10 @@ define(['N/query', 'N/record'],
             try {
                 const strIFQuery = `SELECT
                         transaction.id,
-                        transaction.custbody_tc_barcode_ean_13 as barcode
+                        transaction.custbody_tc_ims_barcode as barcode
                     FROM transaction
                     WHERE transaction.type = 'ItemShip'
-                    AND transaction.custbody_tc_barcode_ean_13  = '${options.barcode}'`
+                    AND transaction.custbody_tc_ims_barcode  = '${options.barcode}'`
                 log.debug('objIFResult', strIFQuery)
                 const objIFResult = query.runSuiteQL({ query: strIFQuery }).asMappedResults()[0]
                 log.debug('objIFResult', objIFResult)

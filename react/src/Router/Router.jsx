@@ -1,5 +1,5 @@
 import React, { useState, useEffect, cloneElement } from "react"
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material'
 import {
   Mail as InboxIcon,
@@ -21,21 +21,40 @@ import ReturnAuthorization from '../Component/InventoryManagement/ReturnAuthoriz
 const HomeMenuList = {
   Home: [
     { label: 'Home', href: '/', element: <HomePage />, icon: <HomeIcon /> }
-  ],
-  InventoryManagement: [
+  ]
+}
+if (process.env.REACT_APP_ENABLE_INVENTORY_MANAGEMENT_SYSTEM == 'true') {
+  HomeMenuList.InventoryManagement = [
     { alias: 'Inventory Recount', label: 'Recount', href: '/item/recount/scan', element: <Recount />, icon: <InventoryIcon /> },
     { alias: 'Inbound Inventory', label: 'In', href: '/item/inbound/scan', element: <Inbound />, icon: <ArchiveIcon /> },
     { alias: 'Outbound Inventory', label: 'Out', href: '/item/outbound/scan', element: <Outbound />, icon: <UnarchiveIcon /> },
     { alias: 'Return Item', label: 'Return Item', href: '/item/return/scan', element: <ReturnAuthorization />, icon: <AssignmentReturnIcon /> },
-  ],
-  // FixAssets: [
-  //   { label: 'Fix Assets', href: '/fixasset/scan', element: <FixAssets />, icon: <DevicesIcon /> },
-  // ],
+  ]
+}
+if (process.env.REACT_APP_ENABLE_FIXED_ASSET == 'true') {
+  HomeMenuList.FixAssets = [
+    { alias: 'Fix Assets', label: 'Fix Assets', href: '/fixasset/scan', element: <FixAssets />, icon: <DevicesIcon /> },
+  ]
 }
 
 const HomeMenuListEntries = Object.entries(HomeMenuList)
 export const Router = (prop) => {
-  const { mainAppState } = prop
+  const { mainAppState, setMainAppState } = prop
+  const location = useLocation()
+
+  useEffect(() => {
+    const currentPath = location.pathname
+    const allMenus = Object.values(HomeMenuList).flat()
+    console.log(allMenus)
+    const matchedMenu = allMenus.find(menu => menu.href === currentPath)
+    setMainAppState(prev => ({
+      ...prev,
+      title:
+        matchedMenu?.alias ||   // ✅ primary
+        matchedMenu?.label ||   // fallback
+        "Home"
+    }))
+  }, [location.pathname])
   return (<>
     <div style={{ paddingTop: '25px' }}></div>
     <Routes>
@@ -55,7 +74,6 @@ export const Router = (prop) => {
 
 export const DrawerList = (props) => {
   const { setMainAppState } = props
-
   const handleTitleChange = (title) => {
     setMainAppState(prev => { return { ...prev, title: title } })
   }

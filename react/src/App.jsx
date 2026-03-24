@@ -10,50 +10,64 @@ import {
   Menu,
   IconButton,
   Box,
-  Typography
+  Typography,
+  Tabs,
+  Tab
 } from '@mui/material'
 import { Menu as MenuIcon } from '@mui/icons-material'
+import $ from "jquery"
 
 export default function App() {
 
   const [mainAppState, setMainAppState] = useState({ title: '', subsidiary: 2, location: 100 })
 
   useEffect(() => {
-    // Code to run when the URL (location) changes
-    console.log('The URL has changed to:', mainAppState.title)
-    // You can perform actions here, like logging a page view for analytics
-  }, [mainAppState.title])
+    $.post(process.env.REACT_APP_NETSUITE_URL, {
+      data: JSON.stringify({
+        action: 'getUser',
+        page: 'general',
+        data: {
+          currentUserId: 9 // Cornello Engreso | https://12255891.app.netsuite.com/app/common/entity/employee.nl?id=9
+        }
+      })
+    }).done((res) => {
+      const objUser = JSON.parse(res)
+      console.log('objUser', objUser)
+      setMainAppState((prev) => {
+        return {
+          ...prev,
+          subsidiary: objUser.currentUser.subsidiary,
+          location: objUser.currentUser.location
+        }
+      })
+    })
+  }, [mainAppState.subsidiary])
   const [open, setOpen] = useState(false)
-  const toggleDrawer = (newOpen) => () => {
-    setOpen(newOpen)
-  }
+  const toggleDrawer = (newOpen) => () => setOpen(newOpen)
 
-  const AppBarViewCompatibility = [
-    { // xs & sm
-      display: { xs: 'flex', sm: 'flex', md: 'none', lg: 'none', xl: 'none' },
-      position: 'fixed',
-      style: {
-        top: "auto",
-        bottom: 0
-      }
-    },
-    { // xs & sm
-      display: { xs: 'none', sm: 'none', md: 'flex', lg: 'flex', xl: 'flex' },
-      position: 'static',
-      style: {
-        margin: 0,
-        padding: 0
-      }
+  const AppBarViewCompatibility = [{ // xs & sm
+    display: { xs: 'flex', sm: 'flex', md: 'none', lg: 'none', xl: 'none' },
+    position: 'fixed',
+    style: {
+      top: "auto",
+      bottom: 0
     }
+  }, { // xs & sm
+    display: { xs: 'none', sm: 'none', md: 'flex', lg: 'flex', xl: 'flex' },
+    position: 'static',
+    style: {
+      margin: 0,
+      padding: 0
+    }
+  }]
 
-  ]
   return (
     <>
       <BrowserRouter>
-        <Drawer open={open} anchor={'right'} onClose={toggleDrawer(false)} style={{}}>
+        <Drawer open={open} anchor={'right'} onClose={toggleDrawer(false)}>
           {AppBarViewCompatibility.map((obj, index) => (
             <>
-              <Box sx={{ display: obj.display, }}>
+              <Box sx={{ display: obj.display }}>
                 <DrawerList position={obj.position} setMainAppState={setMainAppState} />
               </Box>
             </>
@@ -89,7 +103,7 @@ export default function App() {
         }
 
 
-        < Router mainAppState={mainAppState} />
+        < Router mainAppState={mainAppState} setMainAppState={setMainAppState} />
       </BrowserRouter>
     </>
   )

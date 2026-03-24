@@ -1,0 +1,25 @@
+<suitelet scriptid="customscript_tc_barcode_app_su">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>[SU] Barcode App</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/ThruCloud/BarcodeApp/su/tc_barcode_app_su.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_tc_barcode_app_su">
+      <allemployees>F</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>F</allroles>
+      <audslctrole>ONLINE_FORM_USER</audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>F</isdeployed>
+      <isonline>T</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>RELEASED</status>
+      <title>[SU] Inventory Management System</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>

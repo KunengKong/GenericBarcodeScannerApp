@@ -1,6 +1,6 @@
 <transactioncolumncustomfield scriptid="custcol_tc_ims_reason_to_adjust">
   <accesslevel>2</accesslevel>
-  <aidescription></aidescription>
+  
   <applyformatting>F</applyformatting>
   <colbuild>F</colbuild>
   <colexpense>F</colexpense>

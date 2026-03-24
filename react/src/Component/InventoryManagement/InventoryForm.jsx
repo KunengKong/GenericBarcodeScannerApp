@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import InventoryDetailForm from "./InventoryDetailForm"
 import {
   Box,
   TextField,
@@ -17,15 +18,13 @@ import $ from "jquery"
 
 export default (props) => {
   const { mainAppState, recountState, setRecountState } = props
-  const [form, setForm] = useState(
-    {
-      form: 'recountform', //recountform, discrepancyprompt, discrepancyform
-      action: 'recount',
-      uomSelect: [],
-      locationSelect: [],
-      currentItem: {}
-    }
-  )
+  const [form, setForm] = useState({
+    form: 'recountform', //recountform, discrepancyprompt, discrepancyform
+    action: 'recount',
+    uomSelect: [],
+    locationSelect: [],
+    currentItem: {}
+  })
 
   useEffect(() => {
     if (!recountState.barcode) return
@@ -71,17 +70,25 @@ export default (props) => {
   }, [recountState.barcode])
 
   useEffect(() => {
-
     console.log('recountState', recountState)
-
   }, [recountState])
+
+  useEffect(() => {
+    console.log('form.currentItem', form)
+  }, [form.currentItem])
 
   const handleAddToInventoryAdjustments = (e) => {
     e.preventDefault()
-    if (form.action == 'recount') {
+    if (form.action == 'recount' && form.currentItem.islotitem == 'F' && form.currentItem.isserialitem == 'F') {
       setForm((prev, next) => ({
         ...prev,
         form: 'scanmoreform'
+      }))
+    } else {
+      console.log(form)
+      setForm((prev, next) => ({
+        ...prev,
+        form: 'inventoryDetailsForm'
       }))
     }
   }
@@ -170,7 +177,9 @@ export default (props) => {
           page: 'recount',
           data: {
             items: recountState.items,
-            location: recountState.location
+            location: recountState.location,
+            subsidiary: mainAppState.subsidiary,
+            account: 119
           }
         })
       }).done(() => {
@@ -196,7 +205,6 @@ export default (props) => {
       }))
     }
   }
-
   if (form.form == 'recountform')
     return (
       <Box
@@ -231,15 +239,16 @@ export default (props) => {
           disabled={form.currentItem.description ? true : false}
         />
 
-        <Typography>Quantity On Hand: {form.currentItem.oldquantityonhand || form.currentItem.quantityonhand || 0}</Typography>
+        <Typography>Quantity On Hand: {form.currentItem.oldquantityonhand}</Typography>
 
         <TextField
           label="Quantity"
           type="number"
-          value={form.currentItem.quantityonhand || 0}
+          value={form.currentItem.quantityonhand}
           onChange={handleChange("quantityonhand")}
           fullWidth
           size="small"
+          required
         />
 
         <FormControl fullWidth size="small" >
@@ -424,4 +433,6 @@ export default (props) => {
         <Typography>Process Complete!</Typography>
       </Box>
     </>)
+  else if (form.form == 'inventoryDetailsForm')
+    return (<InventoryDetailForm mainAppState={mainAppState} itemForm={form} setItemForm={setForm} nextForm={'scanmoreform'} />)
 }
