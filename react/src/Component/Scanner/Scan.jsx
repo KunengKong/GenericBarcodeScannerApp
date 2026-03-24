@@ -8,7 +8,6 @@ import { FixAssets } from '../FixAssets/FixAssets'
 export default (props) => {
   const { state, setState } = props
   const [scanForm, setScanForm] = useState({ barcode: '' })
-  console.log('state', state)
   const objTransaction = {
     recount: {
       scan: 'Item'
@@ -39,9 +38,7 @@ export default (props) => {
       if (now - lastTime > 100000)
         buffer = ''
       lastTime = now
-      console.log('buffer', buffer)
       if (e.key === 'Enter') {
-        console.log('buffer | e.key.length', e.key.length)
         setState(prev => {
           if (prev.page == 'recount' && prev.step == 'scan')
             return { barcode: buffer, test: buffer, ...prev, step: 'recountItemForm' }
@@ -52,7 +49,6 @@ export default (props) => {
       } else if (e?.key?.length === 1) {
         // setScanForm(prev => ({ ...prev, barcode: prev.barcode + e.key }))
         buffer += e.key
-        console.log('buffer | e.key', buffer)
       }
     }
     window.addEventListener('keydown', handler)

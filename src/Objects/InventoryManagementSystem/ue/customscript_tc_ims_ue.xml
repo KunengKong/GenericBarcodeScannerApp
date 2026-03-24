@@ -1,12 +1,12 @@
-<usereventscript scriptid="customscript_tc_ims_ue">
+<usereventscript scriptid="customscript_tc_barcode_app_ue">
   <description></description>
   <isinactive>F</isinactive>
-  <name>[UE] Auto Generate Barcode</name>
+  <name>[UE] Barcode App</name>
   <notifyadmins>F</notifyadmins>
   <notifyemails></notifyemails>
   <notifyowner>T</notifyowner>
   <notifyuser>F</notifyuser>
-  <scriptfile>[/SuiteScripts/ThruCloud/InventoryManagementSystem/ue/tc_inventory_management_sys_ue.js]</scriptfile>
+  <scriptfile>[/SuiteScripts/ThruCloud/BarcodeApp/tc_barcode_app_ue.js]</scriptfile>
   <scriptdeployments>
     <scriptdeployment scriptid="customdeploy_tc_vra_ims_ue">
       <allemployees>F</allemployees>
